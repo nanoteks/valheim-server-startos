@@ -1,55 +1,43 @@
-# TODO — bring Valheim Server from template to release-ready
-
-This package was scaffolded as a barebones clone — one daemon running the hello-world
-image with a port-listening health check, no interface yet, no dependencies. The arbitrary ids are named
-`example-*` (e.g. `example-volume`, `example-image`, `example-daemon`) to signal that you
-rename them freely; they are not required namings. Work the list top to bottom; it takes
-you from the clone to a release-ready package. Consult the packaging guide as you go
-(`start-technologies/projects/start-sdk/docs/src/recipes.md` is the intent index). Remove items as you finish
-them, and add items when you defer work.
+# TODO — Valheim Server release checklist
 
 ## Identity & metadata
 
-- [ ] `startos/manifest/index.ts`: fill in `packageRepo`, `upstreamRepo`, and
-      `marketingUrl` / `donationUrl` (or remove the latter two). Confirm the `license`.
-- [ ] Replace the placeholder `LICENSE` file with your package's license, matching the
-      `license` field in `startos/manifest/index.ts`.
-- [ ] `startos/manifest/i18n.ts`: write the short and long descriptions, then translate
-      them into the other locales.
-- [x] Replace the placeholder `icon.svg` with a real Valheim Server icon (≤ 40 KiB). Done: `icon.png` (256×256, 24 KiB) downscaled from workspace `icon.png`.
+- [x] `startos/manifest/index.ts`: `packageRepo` (nanoteks/valheim-server-startos),
+      `upstreamRepo` (Teriyakidactyl/docker-valheim-server), `marketingUrl`, `donationUrl: null`,
+      `license: MIT`.
+- [x] `LICENSE`: real MIT text matching the manifest `license` field.
+- [x] `startos/manifest/i18n.ts`: short/long descriptions, translated (es/de/pl/fr).
+- [x] Icon: `icon.png` (256×256, 24 KiB, ≤ 40 KiB) downscaled from workspace `icon.png`.
+      Note: official Valheim key art — fine for sideload, may need an original icon for marketplace.
 
 ## The service
 
-- [ ] Rename the `example-*` placeholder ids to fit your service. Keep them consistent
-      across `startos/manifest/index.ts` (the `example-image` key and `example-volume` entry),
-      `startos/main.ts` (`imageId`, `volumeId`, the daemon and subcontainer ids), and
-      `startos/backups.ts` (the backed-up volume).
-- [ ] Replace the hello-world image with your service's image: set `images.*.source.dockerTag`
-      (or add a `Dockerfile`) in `startos/manifest/index.ts`, and update the `exec.command` in
-      `startos/main.ts`. (`UPDATING.md` should document how you track the version.)
-- [ ] `startos/main.ts`: define the daemon(s) and any oneshots. The example daemon ships a
-      `checkPortListening` health check on `uiPort` (`startos/utils.ts`) — point `uiPort` at the
-      port your service listens on, or swap in another check. Keep only the i18n keys in
-      `startos/i18n/dictionaries` that you actually reference.
-- [ ] Interfaces: `startos/interfaces.ts` ships wired into `startos/init/index.ts` but
-      returns an empty list. If the service exposes a network interface, bind a port and
-      export the interface there (see `start-technologies/projects/start-sdk/docs/src/interfaces.md`).
-- [ ] `startos/backups.ts`: choose what to back up.
-- [ ] `startos/dependencies.ts`: declare any dependencies (or confirm none).
-- [ ] `startos/actions/`: add user-facing actions / config as needed.
-- [ ] `startos/init/`: add install / restore setup if the service needs it.
-- [ ] `startos/versions/`: set the initial version string and release notes.
+- [x] Ids renamed: image `valheim-server`, volume `main` (+`startos`), daemon
+      `valheim-server`, subcontainer `valheim-server-sub`. Consistent across manifest/main/backups.
+- [x] Image: `ghcr.io/teriyakidactyl/docker-valheim-server:latest` (amd64+arm64 verified),
+      `sdk.useEntrypoint()` + `runAsInit: true` (tini must be PID 1). Tracked in `UPDATING.md`.
+- [x] `startos/main.ts`: single daemon, `checkPortListening(2456)` health check, env from
+      `store.json` (reactive). i18n keys pruned to referenced ones.
+- [x] Interfaces: host `game`, `bindPortRange` 2456×2 (UDP 2456-2457), range interface `game`.
+- [x] `startos/backups.ts`: `ofVolumes('main', 'startos')`.
+- [x] `startos/dependencies.ts`: none confirmed.
+- [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic).
+- [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
+- [x] `startos/versions/`: `1.0.0:0` with localized release notes, empty `up`, `down: IMPOSSIBLE`.
 
 ## Docs
 
-- [ ] Write `README.md` (per `start-technologies/projects/start-sdk/docs/src/writing-readmes.md`).
-- [ ] Write `instructions.md` (per `start-technologies/projects/start-sdk/docs/src/writing-instructions.md`).
-- [ ] Fill in `UPDATING.md` (upstream-version tracking).
+- [x] `README.md` (no version numbers), `instructions.md`, `UPDATING.md`.
+- [x] `AGENTS.md`: repo-specific bullets, no template filler.
 
 ## Build, test, ship
 
-- [ ] First test build: `make` (or `start-cli s9pk pack`); fix any `tsc` / pack errors.
-- [ ] Install on a StartOS box and verify the service runs (and is reachable, once it
-      exposes an interface).
-- [ ] Backup / restore sanity check.
-- [ ] Review the README and instructions one more time against actual behavior.
+- [x] `make`: `tsc` clean, both arches pack.
+- [ ] Sideload on a StartOS box: install, first boot (5-10 min SteamCMD), `Configure`,
+      join via Steam `Join IP <host>:2456`, confirm health goes green.
+- [ ] Backup / restore sanity check on the box.
+- [ ] Re-read README/instructions against actual behavior after the box test.
+- [ ] CI: `tagAndRelease.yml` + `release.yml` disabled (`*.disabled`) — they require
+      Start9 org vars/secrets. Re-enable (rename back) before community-registry submission.
+- [ ] Community registry: email submissions@start9.com with the repo link; Start9 forks to
+      Start9-Community and reviews. Fork becomes upstream afterwards.

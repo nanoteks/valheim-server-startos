@@ -16,14 +16,6 @@ Work this package's `TODO.md` from top to bottom. Keep `README.md` (technical re
 
 ## This repo
 
-<!--
-TODO: write the bullets for this package, then delete this comment.
-
-Only what someone *changing* this package needs and cannot get from README.md or
-instructions.md. What belongs here, and what does not, is set out under
-"AGENTS.md and CLAUDE.md":
-
-  ../start-technologies/projects/start-sdk/docs/src/project-structure.md
-
-A simple package needs none of this — delete the section rather than padding it.
--->
+- Game ports ride a `bindPortRange` (UDP 2456-2457) on host `game` — not individual `bindPort` calls. Retiring that range orphans the WAN forward users set up on their router.
+- Daemon must keep `runAsInit: true`: the upstream entrypoint is `tini`, which aborts when it is not PID 1.
+- Registry CI (`tagAndRelease.yml`, `release.yml`) is disabled (`*.disabled`) until community-registry submission — it needs Start9 org vars/secrets this repo doesn't have.
