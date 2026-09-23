@@ -23,7 +23,7 @@
 - [x] `startos/dependencies.ts`: none confirmed.
 - [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic).
 - [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
-- [x] `startos/versions/`: `1.1.0:1` with localized release notes, empty `up`, `down: IMPOSSIBLE`.
+- [x] `startos/versions/`: `1.1.0:2` with localized release notes, empty `up`, `down: IMPOSSIBLE`.
 
 ## Docs
 

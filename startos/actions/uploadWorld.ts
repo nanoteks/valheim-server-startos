@@ -1,11 +1,10 @@
-import { execFile as execFileCallback } from 'node:child_process'
-import { mkdir, rm } from 'node:fs/promises'
-import { promisify } from 'node:util'
+import { unzipSync } from 'fflate'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { i18n } from '../i18n'
 import { logError } from '../errorHandler'
 import { sdk } from '../sdk'
 
-const execFile = promisify(execFileCallback)
 const { InputSpec, Value } = sdk
 
 const CURRENT_EXTENSIONS = new Set(['.db2', '.fwl2', '.chunk', '.chunks'])
@@ -114,23 +113,17 @@ export function validateWorldArchive(entries: string[]): WorldArchiveKind[] {
   )
 }
 
-async function listArchiveEntries(archivePath: string): Promise<string[]> {
-  const { stdout } = await execFile('unzip', ['-Z1', archivePath]).catch(
-    () => ({
-      stdout: '',
-    }),
-  )
-  return stdout
-    .split(/\r?\n/)
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-}
-
 export async function extractWorldArchive(
   archivePath: string,
   worldPath: string,
 ): Promise<{ kinds: WorldArchiveKind[]; fileCount: number }> {
-  const entries = await listArchiveEntries(archivePath)
+  let contents: Record<string, Uint8Array>
+  try {
+    contents = unzipSync(await readFile(archivePath))
+  } catch {
+    throw new Error('The file is not a valid ZIP archive')
+  }
+  const entries = Object.keys(contents)
 
   if (
     entries.length === 0 ||
@@ -147,8 +140,11 @@ export async function extractWorldArchive(
       extensionOf(file.split('/').pop() ?? '', LEGACY_EXTENSIONS) !== null,
   )
 
-  await mkdir(worldPath, { recursive: true })
-  await execFile('unzip', ['-o', archivePath, '-d', worldPath])
+  for (const file of files) {
+    const destination = join(worldPath, file)
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, contents[file])
+  }
   return { kinds, fileCount: worldFiles.length }
 }
 

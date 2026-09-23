@@ -6,7 +6,8 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@start9labs/start-sdk": "2.0.9"
+    "@start9labs/start-sdk": "2.0.9",
+    "fflate": "^0.8.3"
   },
   "overrides": {
     "@start9labs/start-sdk": "$@start9labs/start-sdk"

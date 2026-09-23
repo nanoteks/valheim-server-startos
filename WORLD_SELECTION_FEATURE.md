@@ -41,8 +41,9 @@ Registers the new `uploadWorld` action alongside `configure`.
 
 `upload-world` action accepting one `.zip` file:
 
-1. Lists archive entries with `unzip -Z1` (an unreadable archive counts as
-   empty and is rejected).
+1. Parses the archive in-process with `fflate` (no `unzip` binary — the
+   StartOS host doesn't ship one). An unreadable file is rejected as not a
+   valid ZIP.
 2. Rejects empty archives and unsafe paths (absolute paths, `..` segments,
    Windows drive prefixes, backslash tricks).
 3. Accepts the archive if it holds at least one complete world:
@@ -52,10 +53,11 @@ Registers the new `uploadWorld` action alongside `configure`.
      the archive root (the server converts legacy worlds itself on load).
    Anything else is rejected with a specific error (flat current-format
    files, unmatched legacy halves, or no world at all).
-4. Extracts with `unzip -o <archive> -d <main/world/worlds_local>` —
+4. Writes the files into `<main/world/worlds_local>` (created recursively) —
    `worlds_local` because the server runs with `-savedir /world` and reads
    worlds from `<savedir>/worlds_local` — and removes the temporary upload
-   afterwards.
+   afterwards. Listing, validation, and extraction share one parse, so there
+   is no check-then-act gap.
 
 Metadata warns the user to stop the server before replacing the active
 world's files. `allowedStatuses` stays `any` so worlds can also be staged
