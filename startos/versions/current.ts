@@ -76,18 +76,18 @@ export async function migrateToNewLayout(
 }
 
 export const current = VersionInfo.of({
-  version: '1.5.0:0',
+  version: '1.5.0:1',
   releaseNotes: {
     en_US:
-      'Download World saves the world as a ZIP served by a new World Downloads address (LAN, port 28763). Leaner backups (Steam cache excluded, old-layout restores migrate).',
+      'Download World shows the full download link (no more assembling it from the Interfaces tab), and init ensures the download folders exist before the file server starts.',
     es_ES:
-      'Descargar mundo guarda el mundo como ZIP servido por la nueva dirección Descargas de mundos (LAN, puerto 28763). Copias más ligeras (caché de Steam excluida, restauraciones antiguas migran).',
+      'Descargar mundo muestra el enlace completo (sin montarlo desde Interfaces) e init garantiza las carpetas antes de arrancar el servidor de archivos.',
     de_DE:
-      'Welt herunterladen speichert die Welt als ZIP unter der neuen Adresse Welt-Downloads (LAN, Port 28763). Schlankere Backups (Steam-Cache ausgeschlossen, alte Restores migrieren).',
+      'Welt herunterladen zeigt den vollständigen Download-Link (kein Zusammensetzen über Interfaces nötig), und init stellt die Ordner vor dem Dateiserver-Start sicher.',
     pl_PL:
-      'Pobierz świat zapisuje świat jako ZIP pod nowym adresem Pobieranie światów (LAN, port 28763). Lżejsze kopie (pamięć podręczna Steam wykluczona, stare przywracania migrują).',
+      'Pobierz świat pokazuje pełny link pobierania (bez składania go z Interfaces), a init zapewnia foldery przed startem serwera plików.',
     fr_FR:
-      'Télécharger le monde enregistre le monde comme ZIP servi par la nouvelle adresse Téléchargements de mondes (LAN, port 28763). Sauvegardes allégées (cache Steam exclu, anciennes restaurations migrent).',
+      'Télécharger le monde affiche le lien complet (plus besoin de le composer depuis Interfaces), et init garantit les dossiers avant le serveur de fichiers.',
   },
   migrations: {
     // Kept for installs skipping 1.2.0:0 — covers any pre-1.2.0 layout.

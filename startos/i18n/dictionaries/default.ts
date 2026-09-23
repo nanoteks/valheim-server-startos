@@ -30,7 +30,7 @@ const dict = {
   'Save a world folder as a ZIP served by the World Downloads address': 21,
   'Name of the world to download': 22,
   'World download ready': 23,
-  'Open the World Downloads address from Interfaces and download the file': 24,
+  'Copy the link or scan the QR to download the world ZIP': 24,
   'Anyone able to reach the World Downloads address can download the world': 25,
   // interfaces.ts + file server health check
   'World Downloads': 26,

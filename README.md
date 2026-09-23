@@ -54,7 +54,7 @@ None.
 
 - Host `game` binds port range 2456-2457 (2 ports, TCP+UDP) via `bindPortRange`. Valheim uses UDP 2456-2457.
 - Range interface `game`, type `api`, named Game Server. User enables LAN/WAN per address in Interfaces tab; WAN requires router UDP 2456-2457 forwarding. No Tor/clearnet claims.
-- Host `downloads` binds internal TCP 8080 (busybox `httpd` sidecar) with preferred external port 28763, protocol `http`. Interface `downloads`, type `api`, named World Downloads — serves `main/downloads/*.zip` over LAN (on by default) for the `Download World` action. WAN off by default.
+- Host `downloads` binds internal TCP 8080 (busybox `httpd` sidecar) with preferred external port 28763, protocol `http`. The OS assigns the actual external port (preferred is not guaranteed) — the Interfaces tab is authoritative. Interface `downloads`, type `api`, named World Downloads — serves `main/downloads/*.zip` over LAN (on by default) for the `Download World` action. WAN off by default.
 - No web UI.
 
 ## Installation and First-Run Flow

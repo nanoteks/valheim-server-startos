@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { zipSync } from 'fflate'
+import { T } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 import { i18n } from '../i18n'
 import { defaultWorldName, storeJson } from '../fileModels/store.json'
@@ -116,7 +117,7 @@ export const downloadWorld = sdk.Action.withInput(
     const current = await storeJson.read().once()
     return { worldName: current?.worldName ?? defaultWorldName }
   },
-  async ({ input }) => {
+  async ({ effects, input }) => {
     const worldName = (input.worldName ?? '').trim()
     if (!worldName) {
       throw new Error('World name cannot be empty')
@@ -135,18 +136,22 @@ export const downloadWorld = sdk.Action.withInput(
         join(downloadsDir, archiveName),
         zipSync(entries, { level: 6 }),
       )
-      console.info(`Prepared world download ${archiveName}`)
+      const url = await downloadUrl(effects, archiveName).catch((error) => {
+        logError('Failed to resolve download URL', error, { archiveName })
+        return null
+      })
+      console.info(
+        `Prepared world download ${archiveName} (${url ?? 'no URL'})`,
+      )
       return {
         version: '1',
         title: i18n('World download ready'),
-        message: i18n(
-          'Open the World Downloads address from Interfaces and download the file',
-        ),
+        message: i18n('Copy the link or scan the QR to download the world ZIP'),
         result: {
           type: 'single',
-          value: archiveName,
+          value: url ?? archiveName,
           copyable: true,
-          qr: false,
+          qr: url !== null,
           masked: false,
         },
       }
@@ -156,3 +161,18 @@ export const downloadWorld = sdk.Action.withInput(
     }
   },
 )
+
+async function downloadUrl(
+  effects: T.Effects,
+  archiveName: string,
+): Promise<string | null> {
+  const host = await sdk.host.getOwn(effects, 'downloads').once()
+  const urls = host?.bindings?.[8080]?.interfaces?.[
+    'downloads'
+  ]?.addressInfo?.nonLocal
+    ?.filter({ kind: 'ipv4' })
+    ?.format() as string[] | undefined
+  const base = urls?.[0]
+  if (!base) return null
+  return `${base.replace(/\/$/, '')}/${encodeURIComponent(archiveName)}`
+}

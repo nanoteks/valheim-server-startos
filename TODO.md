@@ -27,7 +27,7 @@
 -       `upload-world` (ZIP import from URL into `config/worlds_local`),
 -       `download-world` (temporary LAN link for a world ZIP).
 - [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
-- [x] `startos/versions/`: `1.5.0:0` with localized release notes and the 1.2.0:0 data migration
+- [x] `startos/versions/`: `1.5.0:1` with localized release notes and the 1.2.0:0 data migration
 -       (kept: covers installs skipping 1.2.0:0), `down: IMPOSSIBLE`.
 
 ## Docs
@@ -38,7 +38,7 @@
 ## Build, test, ship
 
 - [x] `make`: `tsc` clean, x86_64 packs.
-- [ ] Sideload 1.5.0:0 on a StartOS box: Download World via the World Downloads interface address, Upload World via LAN URL, `Configure`,
+- [ ] Sideload 1.5.0:1 on a StartOS box: Download World via the World Downloads interface address, Upload World via LAN URL, `Configure`,
       join via Steam `Join IP <host>:2456`, confirm health goes green.
 - [ ] Backup / restore sanity check on the box.
 - [ ] Re-read README/instructions against actual behavior after the box test.
