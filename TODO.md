@@ -3,7 +3,7 @@
 ## Identity & metadata
 
 - [x] `startos/manifest/index.ts`: `packageRepo` (nanoteks/valheim-server-startos),
-      `upstreamRepo` (Teriyakidactyl/docker-valheim-server), `marketingUrl`, `donationUrl: null`,
+      `upstreamRepo` (community-valheim-tools/valheim-server-docker), `marketingUrl`, `donationUrl: null`,
       `license: MIT`.
 - [x] `LICENSE`: real MIT text matching the manifest `license` field.
 - [x] `startos/manifest/i18n.ts`: short/long descriptions, translated (es/de/pl/fr).
@@ -14,16 +14,20 @@
 
 - [x] Ids renamed: image `valheim-server`, volume `main` (+`startos`), daemon
       `valheim-server`, subcontainer `valheim-server-sub`. Consistent across manifest/main/backups.
-- [x] Image: `ghcr.io/teriyakidactyl/docker-valheim-server:latest` (amd64+arm64 verified),
-      `sdk.useEntrypoint()` + `runAsInit: true` (tini must be PID 1). Tracked in `UPDATING.md`.
+- [x] Image: `ghcr.io/community-valheim-tools/valheim-server:1.4.0` (x86_64 only;
+      upstream publishes no arm64),
+      `sdk.useEntrypoint()` + `runAsInit: true` (entrypoint ends in tini, which must be PID 1).
+      Tracked in `UPDATING.md`.
 - [x] `startos/main.ts`: single daemon, `checkPortListening(2456)` health check, env from
       `store.json` (reactive). i18n keys pruned to referenced ones.
 - [x] Interfaces: host `game`, `bindPortRange` 2456×2 (UDP 2456-2457), range interface `game`.
 - [x] `startos/backups.ts`: `ofVolumes('main', 'startos')`.
 - [x] `startos/dependencies.ts`: none confirmed.
-- [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic).
+- [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic),
+-       `upload-world` (ZIP import into `config/worlds_local`, staged file verified).
 - [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
-- [x] `startos/versions/`: `1.1.0:3` with localized release notes, empty `up`, `down: IMPOSSIBLE`.
+- [x] `startos/versions/`: `1.2.0:0` with localized release notes and a data migration
+-       (`world/worlds_local` → `config/worlds_local`, orphaned `world`+`app` removed), `down: IMPOSSIBLE`.
 
 ## Docs
 
@@ -32,9 +36,9 @@
 
 ## Build, test, ship
 
-- [x] `make`: `tsc` clean, both arches pack.
-- [ ] Sideload on a StartOS box: install, first boot (5-10 min SteamCMD), `Configure`,
-      join via Steam `Join IP <host>:2456`, confirm health goes green.
+- [x] `make`: `tsc` clean, x86_64 packs.
+- [ ] Sideload 1.2.0:0 on a StartOS box: update migrates worlds, first boot completes SteamCMD, `Configure`,
+      join via Steam `Join IP <host>:2456`, confirm health goes green; Upload World (tiny + real ZIP).
 - [ ] Backup / restore sanity check on the box.
 - [ ] Re-read README/instructions against actual behavior after the box test.
 - [ ] CI: `tagAndRelease.yml` + `release.yml` disabled (`*.disabled`) — they require

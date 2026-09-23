@@ -2,14 +2,14 @@
 
 ## Documentation
 
-- Upstream image: https://github.com/Teriyakidactyl/docker-valheim-server
+- Upstream image: https://github.com/community-valheim-tools/valheim-server-docker
 - Valheim dedicated servers: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/
 - Steam server browser: connect via `steam://connect/<server-ip>:2456`
 
 ## What you get on StartOS
 
 - Dedicated Valheim server (UDP ports 2456-2457) exposed as the `game` host.
-- Worlds persist in the `main` volume (`/world` saves, `/app` server files).
+- Worlds persist in the `main` volume (`/config` saves, `/opt/valheim` server files).
 - Server settings via the `Configure` action (name, world, password, public listing).
 - Existing worlds can be imported with the `Upload World` action: submit a ZIP with one complete world — either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted automatically on first load). Stop the server first if you are replacing the active world.
 

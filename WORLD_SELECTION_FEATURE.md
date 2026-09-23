@@ -5,9 +5,9 @@
 Two related changes make it easier to run an existing Valheim world instead of
 always generating a new one: the `Configure` action guides the user toward
 reusing a world name, and a new `Upload World` action imports a world from a
-ZIP archive into the `main/world` volume.
+ZIP archive into the `main/config` volume.
 
-Note: there is no automatic world discovery. No code lists the `/world`
+Note: there is no automatic world discovery. No code lists the worlds directory
 directory and no world list is shown or logged. The user types (or reuses) the
 world name in `Configure`.
 
@@ -18,7 +18,7 @@ world name in `Configure`.
 #### `startos/actions/configure.ts`
 
 1. **Input spec updated**: the `worldName` field description now reads
-   "World seed name stored under /world. Enter an existing world name or
+   "World name stored under /config/worlds_local. Enter an existing world name or
    create a new one.", telling users an existing world's name is acceptable.
 
 2. **Prefill callback hardened**: `storeJson.read().once()` is wrapped in
@@ -53,9 +53,8 @@ Registers the new `uploadWorld` action alongside `configure`.
      the archive root (the server converts legacy worlds itself on load).
    Anything else is rejected with a specific error (flat current-format
    files, unmatched legacy halves, or no world at all).
-4. Writes the files into `<main/world/worlds_local>` (created recursively) —
-   `worlds_local` because the server runs with `-savedir /world` and reads
-   worlds from `<savedir>/worlds_local` — and removes the temporary upload
+4. Writes the files into `<main/config/worlds_local>` (created recursively) —
+   the directory the server reads — and removes the temporary upload
    afterwards. Listing, validation, and extraction share one parse, so there
    is no check-then-act gap.
 
@@ -69,7 +68,7 @@ while the server runs; the warning is the guard.
 
 1. User runs Actions → `Upload World` and submits a ZIP containing one
    complete world folder (`.db2` + `.fwl2` + `.chunk`).
-2. The action validates and extracts the archive into `main/world`.
+2. The action validates and extracts the archive into `main/config/worlds_local`.
 3. User runs Actions → `Configure` and sets World Name to the uploaded
    world's name (the exact file base name).
 4. The service restarts with `WORLD_NAME` pointing at the uploaded world.
@@ -86,8 +85,7 @@ the restored world's name in `Configure` — same step 3 above.
 
 ## File format reference
 
-The server runs with `-savedir /world`, so worlds live under
-`/world/worlds_local` (i.e. `main/world/worlds_local` on the volume):
+Worlds live under `/config/worlds_local` (i.e. `main/config/worlds_local` on the volume):
 
 - Current format (Valheim 1.0+): one folder per world containing `_main.N.db2`
   (world data), `_main.N.fwl2` (metadata: name, seed), `_main.N.chunks`
@@ -113,7 +111,7 @@ Uploaded Valheim world archive with <n> world files
 
 ## Future enhancements
 
-1. **World discovery**: list `/world` at form-render time and log available
+1. **World discovery**: list `/config/worlds_local` at form-render time and log available
    names so users don't have to remember them.
 2. **Dropdown UI**: a select input if the SDK supports it.
 3. **World metadata**: show creation date/size for candidate worlds.
@@ -130,8 +128,8 @@ Uploaded Valheim world archive with <n> world files
 ### World upload
 
 - Upload a valid current-format ZIP (world folder) → files land in
-  `main/world/worlds_local/<World>/`.
-- Upload a legacy `.db`+`.fwl` ZIP → files land in `main/world/worlds_local/`
+  `main/config/worlds_local/<World>/.
+- Upload a legacy `.db`+`.fwl` ZIP → files land in `main/config/worlds_local/`
   and the server converts them on first load.
 - Upload a ZIP with an unsafe path (`../`, absolute) → rejected, nothing written.
 - Upload a ZIP missing part of the world (no `.chunk`, lone `.db`) → rejected
@@ -148,7 +146,7 @@ Uploaded Valheim world archive with <n> world files
 ### Server boots a fresh world instead of the upload
 
 The world name must match the uploaded files' base name exactly. Check the
-file names in `main/world` and re-run `Configure`.
+file names in `main/config/worlds_local` and re-run `Configure`.
 
 ### Upload rejected
 

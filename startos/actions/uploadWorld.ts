@@ -174,7 +174,7 @@ export const uploadWorld = sdk.Action.withInput(
         throw new Error('Upload input missing staged file path')
       }
       archivePath = staged.path
-      worldPath = sdk.volumes.main.subpath('world/worlds_local')
+      worldPath = sdk.volumes.main.subpath('config/worlds_local')
 
       const stagedStat = await stat(archivePath).catch(() => null)
       if (stagedStat === null || !stagedStat.isFile()) {

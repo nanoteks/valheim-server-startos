@@ -26,17 +26,19 @@
 
 ## Image and Container Runtime
 
-- Image: `ghcr.io/teriyakidactyl/docker-valheim-server:latest`, architectures `x86_64`, `aarch64` (ARM via Box64).
-- Entrypoint: upstream `tini` entrypoint via `sdk.useEntrypoint()` with `runAsInit: true` (tini must be PID 1).
+- Image: `ghcr.io/community-valheim-tools/valheim-server:1.4.0`, architecture `x86_64` only (upstream publishes no arm64 build; `aarch64` was dropped in 1.2.0:0).
+- Entrypoint: upstream `bootstrap` ends in `exec tini -- supervisord`, run via `sdk.useEntrypoint()` with `runAsInit: true` (tini must be PID 1).
 - Subcontainers: `valheim-server-sub` runs daemon `valheim-server`.
-- Env passed in `main.ts`: `SERVER_NAME`, `WORLD_NAME`, `SERVER_PASS`, `SERVER_PUBLIC` (`1`/`0`), `SERVER_PORT=2456`, `TZ=Etc/UTC`.
+- Env passed in `main.ts`: `SERVER_NAME`, `WORLD_NAME`, `SERVER_PASS`, `SERVER_PUBLIC` (`1`/`0`, upstream also accepts `true`/`false`), `SERVER_PORT=2456`, `TZ=Etc/UTC`.
+- The image boots as root and chowns `/config` + `/opt/valheim` to its service user itself — no package oneshot needed.
 
 ## Volume and Data Layout
 
 - Volume `main`: persistent game data.
-  - subpath `world` → `/world` (world saves, `WORLD_FILES`; permitted list).
-  - subpath `app` → `/app` (SteamCMD server files, `APP_FILES`).
+  - subpath `config` → `/config` (server config; worlds at `/config/worlds_local`, permitted list).
+  - subpath `data` → `/opt/valheim` (SteamCMD server files + depot manifest cache, needed for updates).
 - Volume `startos` (unmounted): package state only, holds `store.json`. Backed up but never mounted into the container.
+- 1.2.0:0 migrated the Teriyakidactyl layout (`world/`, `app/`) to this one and removed the orphaned trees; see `startos/versions/current.ts`.
 
 ## File Models
 
@@ -56,13 +58,13 @@ None.
 
 - Install seeds `store.json` defaults. First start downloads/validates server via SteamCMD (5-10 min).
 - User runs `Configure` action to set name/world/password/visibility; daemon restarts on change.
-- User runs `Upload World` to upload a ZIP with one complete world: either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted by the server on load). Extracted into `main/world/worlds_local`, where the server reads worlds (`-savedir /world`).
+- User runs `Upload World` to upload a ZIP with one complete world: either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted by the server on load). Extracted into `main/config/worlds_local`, where the server reads worlds.
 - Client connects via Steam Join IP `<host>:2456` + password.
 
 ## Actions
 
 - `configure`: input form for serverName, worldName, serverPass, serverPublic. Prefill from `store.json` via `.once()`; handler `merge()`s back. `allowedStatuses: any`.
-- `upload-world`: accepts one `.zip` archive with one complete world (current-format folder or legacy `.db`+`.fwl` pair). Rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/world/worlds_local`.
+- `upload-world`: accepts one `.zip` archive with one complete world (current-format folder or legacy `.db`+`.fwl` pair). Rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/config/worlds_local`. The staged file is verified before extraction; every failure names its cause.
 
 ## Tasks
 
@@ -74,14 +76,13 @@ None.
 
 ## Backups and Restore
 
-- `sdk.Backups.ofVolumes('main', 'startos')`. Restore brings back worlds (`/world`), server files (`/app`), and settings. No re-registration needed.
+- `sdk.Backups.ofVolumes('main', 'startos')`. Restore brings back worlds (`/config/worlds_local`), server files (`/opt/valheim`), and settings. No re-registration needed.
 
 ## Limitations and Differences
 
-- ARM64 runs x86 server binary under Box64; expect slower first boot.
+- x86_64 only; no aarch64 build (upstream publishes amd64 alone).
 - Password must be ≥5 characters (Valheim-enforced).
-- No mods UI; `SERVER_ALLOW_LIST` not exposed (defaults allow-all).
-- `latest` tag floats; pin digest or semver in manifest for releases.
+- No mods UI (upstream supports BepInEx/ValheimPlus, not exposed here); `SERVER_ALLOW_LIST` not exposed (defaults allow-all).
 
 ---
 
@@ -90,18 +91,18 @@ None.
 ```yaml
 package_id: 'valheim-server'
 image:
-  architectures: ['x86_64', 'aarch64']
-  upstream: 'ghcr.io/teriyakidactyl/docker-valheim-server:latest'
+  architectures: ['x86_64']
+  upstream: 'ghcr.io/community-valheim-tools/valheim-server:1.4.0'
 subcontainers: ['valheim-server-sub']
 volumes:
-  main: { world: '/world', app: '/app' }
+  main: { config: '/config', data: '/opt/valheim' }
   startos: { store.json: 'serverName, worldName, serverPass, serverPublic' }
 file_models: ['store.json']
 startos_managed_env_vars: ['SERVER_NAME', 'WORLD_NAME', 'SERVER_PASS', 'SERVER_PUBLIC', 'SERVER_PORT', 'TZ']
 dependencies: []
 interfaces:
   game: { ports: '2456-2457', type: 'api', transport: 'TCP+UDP' }
-actions: ['configure']
+actions: ['configure', 'upload-world']
 tasks: []
 health_checks: ['Game Server: checkPortListening 2456']
 ```

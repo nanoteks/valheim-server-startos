@@ -1,8 +1,8 @@
 # World Selection Feature - Implementation Summary
 
 The `Configure` action now invites reusing an existing world name, and a new
-`Upload World` action imports a current-format world ZIP into `main/world`.
-There is no automatic discovery: no module lists `/world`, and no world list
+`Upload World` action imports a current-format world ZIP into `main/config`.
+There is no automatic discovery: no module lists the worlds directory, and no world list
 is logged. The user types the world name in `Configure`.
 
 ## What was built
@@ -18,7 +18,7 @@ is logged. The user types the world name in `Configure`.
 - Rejects flat current-format files and unmatched legacy halves with
   specific errors.
 - Extracts into `sdk.volumes.main.subpath('world/worlds_local')` — the
-  directory the server reads (`-savedir /world`) — then deletes the temp
+  directory the server reads (`/config/worlds_local`) — then deletes the temp
   upload.
 - Warns to stop the server before replacing the active world's files.
 

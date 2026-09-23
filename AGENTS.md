@@ -17,7 +17,8 @@ Work this package's `TODO.md` from top to bottom. Keep `README.md` (technical re
 ## This repo
 
 - Game ports ride a `bindPortRange` (UDP 2456-2457) on host `game` — not individual `bindPort` calls. Retiring that range orphans the WAN forward users set up on their router.
-- Daemon must keep `runAsInit: true`: the upstream entrypoint is `tini`, which aborts when it is not PID 1.
-- The `chown-volumes` oneshot must stay ahead of the daemon: the image runs as uid 1000 while fresh volumes are root-owned, so without it SteamCMD can't write `/app` and the server crash-loops. It needs `user: 'root'` — the image `USER` is `container`.
+- Daemon must keep `runAsInit: true`: the upstream entrypoint ends in `exec tini -- supervisord`, and tini aborts when it is not PID 1.
+- No chown oneshot: the image boots as root and chowns `/config` + `/opt/valheim` itself. (The retired Teriyakidactyl image ran as uid 1000 and needed one.)
 - Actions execute on the StartOS host, whose base image ships no `unzip`: `uploadWorld.ts` parses ZIPs in-process (`fflate`, bundled via `ncc`). Never shell out to host binaries from actions.
+- x86_64 only: upstream publishes no arm64 build, so the manifest must not re-add `aarch64`.
 - Registry CI (`tagAndRelease.yml`, `release.yml`) is disabled (`*.disabled`) until community-registry submission — it needs Start9 org vars/secrets this repo doesn't have.

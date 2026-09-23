@@ -12,7 +12,7 @@ const dict = {
   'Server Name': 5,
   'Name shown in the Steam server browser': 6,
   'World Name': 7,
-  'World name stored under /world/worlds_local. Enter an existing world name or create a new one.': 8,
+  'World name stored under /config/worlds_local. Enter an existing world name or create a new one.': 8,
   'Server Password': 9,
   'Minimum 5 characters, required by Valheim': 10,
   'Public Server': 11,
