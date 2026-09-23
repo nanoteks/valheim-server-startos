@@ -6,6 +6,7 @@ import {
   defaultWorldName,
   storeJson,
 } from '../fileModels/store.json'
+import { logError } from '../errorHandler'
 
 const { InputSpec, Value } = sdk
 
@@ -21,7 +22,9 @@ export const inputSpec = InputSpec.of({
   }),
   worldName: Value.text({
     name: i18n('World Name'),
-    description: i18n('World seed name stored under /world'),
+    description: i18n(
+      'World seed name stored under /world. Enter an existing world name or create a new one.',
+    ),
     required: true,
     default: defaultWorldName,
     minLength: 1,
@@ -57,20 +60,49 @@ export const configure = sdk.Action.withInput(
   },
   inputSpec,
   async ({ effects }) => {
-    const current = await storeJson.read().once()
-    return {
-      serverName: current?.serverName ?? defaultServerName,
-      worldName: current?.worldName ?? defaultWorldName,
-      serverPass: current?.serverPass ?? defaultServerPass,
-      serverPublic: current?.serverPublic ?? false,
+    try {
+      const current = await storeJson.read().once()
+
+      return {
+        serverName: current?.serverName ?? defaultServerName,
+        worldName: current?.worldName ?? defaultWorldName,
+        serverPass: current?.serverPass ?? defaultServerPass,
+        serverPublic: current?.serverPublic ?? false,
+      }
+    } catch (error) {
+      logError('Failed to read configuration', error)
+      console.warn('Using default configuration values')
+      return {
+        serverName: defaultServerName,
+        worldName: defaultWorldName,
+        serverPass: defaultServerPass,
+        serverPublic: false,
+      }
     }
   },
   async ({ effects, input }) => {
-    await storeJson.merge(effects, {
-      serverName: input.serverName,
-      worldName: input.worldName,
-      serverPass: input.serverPass,
-      serverPublic: input.serverPublic ?? false,
-    })
+    try {
+      // Validate world name is not empty
+      const worldName = (input.worldName ?? '').trim()
+      if (!worldName) {
+        throw new Error('World name cannot be empty')
+      }
+
+      await storeJson.merge(effects, {
+        serverName: input.serverName,
+        worldName: worldName,
+        serverPass: input.serverPass,
+        serverPublic: input.serverPublic ?? false,
+      })
+      console.info(
+        `Successfully updated server configuration with world: ${worldName}`,
+      )
+    } catch (error) {
+      logError('Failed to save configuration', error, {
+        serverName: input.serverName,
+        worldName: input.worldName,
+      })
+      throw error
+    }
   },
 )
