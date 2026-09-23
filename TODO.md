@@ -24,9 +24,10 @@
 - [x] `startos/backups.ts`: `ofVolumes('main', 'startos')`.
 - [x] `startos/dependencies.ts`: none confirmed.
 - [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic),
--       `upload-world` (ZIP import into `config/worlds_local`, staged file verified).
+-       `upload-world` (ZIP import from URL into `config/worlds_local`),
+-       `download-world` (temporary LAN link for a world ZIP).
 - [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
-- [x] `startos/versions/`: `1.3.0:1` with localized release notes and the 1.2.0:0 data migration
+- [x] `startos/versions/`: `1.4.0:0` with localized release notes and the 1.2.0:0 data migration
 -       (kept: covers installs skipping 1.2.0:0), `down: IMPOSSIBLE`.
 
 ## Docs
@@ -37,7 +38,7 @@
 ## Build, test, ship
 
 - [x] `make`: `tsc` clean, x86_64 packs.
-- [ ] Sideload 1.3.0:1 on a StartOS box: Upload World via LAN URL (tiny + real ZIP), `Configure`,
+- [ ] Sideload 1.4.0:0 on a StartOS box: Download World link (LAN reachability), Upload World via LAN URL, `Configure`,
       join via Steam `Join IP <host>:2456`, confirm health goes green.
 - [ ] Backup / restore sanity check on the box.
 - [ ] Re-read README/instructions against actual behavior after the box test.

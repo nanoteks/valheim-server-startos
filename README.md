@@ -65,6 +65,7 @@ None.
 
 - `configure`: input form for serverName, worldName, serverPass, serverPublic. Prefill from `store.json` via `.once()`; handler `merge()`s back. `allowedStatuses: any`.
 - `upload-world`: takes one `worldUrl` (`http(s)` URL of a `.zip` archive with one complete world: current-format folder or legacy `.db`+`.fwl` pair). Downloads with a 1 GB cap, then the same validation as ever: rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/config/worlds_local`. File-picker inputs are deliberately not used — StartOS does not stage action file uploads (the raw browser `File` arrives as `{}` and fails input validation).
+- `download-world`: takes one `worldName` (prefilled from settings) and serves the world as a temporary LAN download link (10-minute TTL, closes after first download). Current-format worlds zip as `<name>/…`; legacy pairs zip as flat `<name>.db`+`<name>.fwl`. Returns the URL as a copyable result (plus QR). Anyone on the LAN can fetch while live.
 
 ## Tasks
 
@@ -76,7 +77,7 @@ None.
 
 ## Backups and Restore
 
-- `sdk.Backups.ofVolumes('main', 'startos')`. Restore brings back worlds (`/config/worlds_local`), server files (`/opt/valheim`), and settings. No re-registration needed.
+- `sdk.Backups.ofVolumes('main', 'startos')` with a backup-only rsync exclude of regenerable `data/` (Steam server files, redownloaded after restore). Restore brings back worlds (`/config/worlds_local`), config, and settings; the service re-downloads server files on first post-restore boot. Restoring a pre-1.2.0 backup also runs the layout migration via init (`restore` kind). No re-registration needed.
 
 ## Limitations and Differences
 
@@ -102,7 +103,7 @@ startos_managed_env_vars: ['SERVER_NAME', 'WORLD_NAME', 'SERVER_PASS', 'SERVER_P
 dependencies: []
 interfaces:
   game: { ports: '2456-2457', type: 'api', transport: 'TCP+UDP' }
-actions: ['configure', 'upload-world']
+actions: ['configure', 'upload-world', 'download-world']
 tasks: []
 health_checks: ['Game Server: checkPortListening 2456']
 ```

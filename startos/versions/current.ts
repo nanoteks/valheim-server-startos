@@ -76,18 +76,18 @@ export async function migrateToNewLayout(
 }
 
 export const current = VersionInfo.of({
-  version: '1.3.0:1',
+  version: '1.4.0:0',
   releaseNotes: {
     en_US:
-      'Instructions tab gains a step-by-step world-import guide (serve the ZIP over LAN with Python, paste its URL into Upload World).',
+      'New Download World action (temporary LAN link for a world ZIP), leaner backups (Steam cache excluded, old-layout restores migrate).',
     es_ES:
-      'La pestaña de instrucciones incluye una guía paso a paso para importar mundos (sirve el ZIP por LAN con Python y pega su URL en Subir mundo).',
+      'Nueva acción Descargar mundo (enlace LAN temporal para el ZIP del mundo), copias más ligeras (caché de Steam excluida, restauraciones antiguas migran).',
     de_DE:
-      'Der Anleitungs-Tab enthält nun eine Schritt-für-Schritt-Anleitung zum Importieren von Welten (ZIP per Python über LAN bereitstellen, URL bei Welt hochladen einfügen).',
+      'Neue Aktion Welt herunterladen (temporärer LAN-Link für das Welt-ZIP), schlankere Backups (Steam-Cache ausgeschlossen, alte Restores migrieren).',
     pl_PL:
-      'Karta instrukcji zawiera przewodnik krok po kroku dotyczący importowania światów (udostępnij ZIP przez LAN Pythonem i wklej adres URL w Prześlij świat).',
+      'Nowa akcja Pobierz świat (tymczasowy link LAN do ZIP-a świata), lżejsze kopie (pamięć podręczna Steam wykluczona, stare przywracania migrują).',
     fr_FR:
-      'L’onglet instructions inclut un guide pas à pas pour importer des mondes (sers le ZIP sur le LAN avec Python, colle son URL dans Téléverser un monde).',
+      'Nouvelle action Télécharger le monde (lien LAN temporaire pour le ZIP du monde), sauvegardes allégées (cache Steam exclu, anciennes restaurations migrent).',
   },
   migrations: {
     // Kept for installs skipping 1.2.0:0 — covers any pre-1.2.0 layout.

@@ -8,8 +8,13 @@ import { sdk } from '../sdk'
 
 const { InputSpec, Value } = sdk
 
-const CURRENT_EXTENSIONS = new Set(['.db2', '.fwl2', '.chunk', '.chunks'])
-const LEGACY_EXTENSIONS = new Set(['.db', '.fwl'])
+export const CURRENT_EXTENSIONS = new Set([
+  '.db2',
+  '.fwl2',
+  '.chunk',
+  '.chunks',
+])
+export const LEGACY_EXTENSIONS = new Set(['.db', '.fwl'])
 
 export type WorldArchiveKind = 'current' | 'legacy'
 

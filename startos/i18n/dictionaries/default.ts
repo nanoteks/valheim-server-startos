@@ -25,6 +25,13 @@ const dict = {
   'Upload World': 17,
   'Download a Valheim world ZIP archive from a URL into the server volume': 18,
   'Stop the server before replacing files for the active world': 19,
+  // actions/downloadWorld.ts
+  'Download World': 20,
+  'Serve a world folder as a temporary download link': 21,
+  'Name of the world to download': 22,
+  'World download ready': 23,
+  'Open or copy the link within 10 minutes to download the world ZIP': 24,
+  'Anyone on your LAN can download the world while the link is live': 25,
 } as const
 
 /**

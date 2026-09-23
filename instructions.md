@@ -30,3 +30,10 @@ The `Upload World` action downloads a world ZIP from a URL you serve on your own
 4. Check it works: open `http://<your-pc-ip>:8000/<name>.zip` in a browser — the ZIP should download.
 5. In StartOS run Actions → `Upload World` and paste that same URL, then Submit.
 6. Run Actions → `Configure` and set World Name to the uploaded world's exact name (the folder name for current-format worlds, the file name without extension for legacy ones).
+
+## Backing up / moving your world
+
+Two ways to get a world off the server:
+
+- **Download link (quickest):** run Actions → `Download World`, enter the world name, and open or copy the link (or scan the QR) within 10 minutes. Anyone on your LAN can fetch while the link is live.
+- **Package backup:** System → Backups → back up Valheim Server, then download the backup to your PC. Worlds live under `main/config/worlds_local/` inside it — unzip that folder for wipe-restore or a move to a non-Start9 server. Server files are excluded from backups and re-download on first boot after a restore (5-10 min).
