@@ -19,7 +19,7 @@ export const inputSpec = InputSpec.of({
     description: i18n(
       'Upload a ZIP with one complete world: a current-format world folder (.db2, .fwl2, .chunk files) or legacy world files (.db + .fwl pair)',
     ),
-    extensions: ['zip'],
+    extensions: ['.zip'],
     required: true,
   }),
 })
