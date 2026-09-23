@@ -76,18 +76,18 @@ export async function migrateToNewLayout(
 }
 
 export const current = VersionInfo.of({
-  version: '1.3.0:0',
+  version: '1.3.0:1',
   releaseNotes: {
     en_US:
-      'Upload World takes a ZIP URL instead of a file upload (StartOS does not stage action file inputs). Worlds still migrate from the old layout automatically.',
+      'Instructions tab gains a step-by-step world-import guide (serve the ZIP over LAN with Python, paste its URL into Upload World).',
     es_ES:
-      'Subir mundo acepta una URL del ZIP en lugar de subida de archivos (StartOS no transfiere archivos de acciones). Los mundos siguen migrando automáticamente.',
+      'La pestaña de instrucciones incluye una guía paso a paso para importar mundos (sirve el ZIP por LAN con Python y pega su URL en Subir mundo).',
     de_DE:
-      'Welt hochladen nimmt nun eine ZIP-URL statt eines Datei-Uploads (StartOS stellt Aktionsdateien nicht bereit). Welten migrieren weiterhin automatisch.',
+      'Der Anleitungs-Tab enthält nun eine Schritt-für-Schritt-Anleitung zum Importieren von Welten (ZIP per Python über LAN bereitstellen, URL bei Welt hochladen einfügen).',
     pl_PL:
-      'Prześlij świat przyjmuje adres URL ZIP-a zamiast przesyłania pliku (StartOS nie przekazuje plików akcji). Światy nadal migrują automatycznie.',
+      'Karta instrukcji zawiera przewodnik krok po kroku dotyczący importowania światów (udostępnij ZIP przez LAN Pythonem i wklej adres URL w Prześlij świat).',
     fr_FR:
-      'Téléverser un monde prend une URL ZIP au lieu d’un envoi de fichier (StartOS ne transfère pas les fichiers d’actions). Les mondes migrent toujours automatiquement.',
+      'L’onglet instructions inclut un guide pas à pas pour importer des mondes (sers le ZIP sur le LAN avec Python, colle son URL dans Téléverser un monde).',
   },
   migrations: {
     // Kept for installs skipping 1.2.0:0 — covers any pre-1.2.0 layout.
