@@ -34,7 +34,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       false,
     )
 
-    const mounts = sdk.Mounts.of()
+    const gameMounts = sdk.Mounts.of()
       .mountVolume({
         volumeId: 'main',
         subpath: 'config',
@@ -48,35 +48,63 @@ export const main = sdk.setupMain(async ({ effects }) => {
         readonly: false,
       })
 
-    return sdk.Daemons.of(effects).addDaemon('valheim-server', {
-      subcontainer: sdk.SubContainer.of(
-        effects,
-        { imageId: 'valheim-server' },
-        mounts,
-        'valheim-server-sub',
-      ),
-      exec: {
-        command: sdk.useEntrypoint(),
-        runAsInit: true,
-        env: {
-          SERVER_NAME: serverName ?? defaultServerName,
-          WORLD_NAME: worldName ?? defaultWorldName,
-          SERVER_PASS: serverPass ?? defaultServerPass,
-          SERVER_PUBLIC: (serverPublic ?? false) ? '1' : '0',
-          SERVER_PORT: String(VALHEIM_PORT),
-          TZ: 'Etc/UTC',
-        },
-      },
-      ready: {
-        display: i18n('Game Server'),
-        fn: () =>
-          sdk.healthCheck.checkPortListening(effects, VALHEIM_PORT, {
-            successMessage: i18n('Server is running'),
-            errorMessage: i18n('Server is starting'),
-          }),
-      },
-      requires: [],
+    const downloadsMounts = sdk.Mounts.of().mountVolume({
+      volumeId: 'main',
+      subpath: 'downloads',
+      mountpoint: '/downloads',
+      readonly: true,
     })
+
+    return sdk.Daemons.of(effects)
+      .addDaemon('valheim-server', {
+        subcontainer: sdk.SubContainer.of(
+          effects,
+          { imageId: 'valheim-server' },
+          gameMounts,
+          'valheim-server-sub',
+        ),
+        exec: {
+          command: sdk.useEntrypoint(),
+          runAsInit: true,
+          env: {
+            SERVER_NAME: serverName ?? defaultServerName,
+            WORLD_NAME: worldName ?? defaultWorldName,
+            SERVER_PASS: serverPass ?? defaultServerPass,
+            SERVER_PUBLIC: (serverPublic ?? false) ? '1' : '0',
+            SERVER_PORT: String(VALHEIM_PORT),
+            TZ: 'Etc/UTC',
+          },
+        },
+        ready: {
+          display: i18n('Game Server'),
+          fn: () =>
+            sdk.healthCheck.checkPortListening(effects, VALHEIM_PORT, {
+              successMessage: i18n('Server is running'),
+              errorMessage: i18n('Server is starting'),
+            }),
+        },
+        requires: [],
+      })
+      .addDaemon('downloads', {
+        subcontainer: sdk.SubContainer.of(
+          effects,
+          { imageId: 'downloads' },
+          downloadsMounts,
+          'downloads-sub',
+        ),
+        exec: {
+          command: ['httpd', '-f', '-p', '8080', '-h', '/downloads'],
+        },
+        ready: {
+          display: i18n('World Downloads'),
+          fn: () =>
+            sdk.healthCheck.checkPortListening(effects, 8080, {
+              successMessage: i18n('File server is running'),
+              errorMessage: i18n('File server is starting'),
+            }),
+        },
+        requires: [],
+      })
   } catch (error) {
     logError('Failed to setup main daemon', error)
     throw error

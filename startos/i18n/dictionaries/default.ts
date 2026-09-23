@@ -27,11 +27,16 @@ const dict = {
   'Stop the server before replacing files for the active world': 19,
   // actions/downloadWorld.ts
   'Download World': 20,
-  'Serve a world folder as a temporary download link': 21,
+  'Save a world folder as a ZIP served by the World Downloads address': 21,
   'Name of the world to download': 22,
   'World download ready': 23,
-  'Open or copy the link within 10 minutes to download the world ZIP': 24,
-  'Anyone on your LAN can download the world while the link is live': 25,
+  'Open the World Downloads address from Interfaces and download the file': 24,
+  'Anyone able to reach the World Downloads address can download the world': 25,
+  // interfaces.ts + file server health check
+  'World Downloads': 26,
+  'Download world ZIP files over LAN': 27,
+  'File server is running': 28,
+  'File server is starting': 29,
 } as const
 
 /**

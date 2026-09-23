@@ -1,6 +1,4 @@
-import { createServer, type Server } from 'node:http'
-import { networkInterfaces } from 'node:os'
-import { mkdir, readdir, readFile, stat } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { zipSync } from 'fflate'
 import { sdk } from '../sdk'
@@ -11,17 +9,7 @@ import { logError } from '../errorHandler'
 
 const { InputSpec, Value } = sdk
 
-const LINK_PORT_START = 28763
-const LINK_PORT_TRIES = 10
-const LINK_TTL_MS = 10 * 60 * 1000
-
-interface ActiveDownload {
-  server: Server
-  timer: NodeJS.Timeout
-  url: string
-}
-
-let activeDownload: ActiveDownload | undefined
+export const MAX_KEPT_DOWNLOADS = 3
 
 export const inputSpec = InputSpec.of({
   worldName: Value.text({
@@ -85,22 +73,27 @@ export async function collectWorldFiles(
   )
 }
 
-function lanAddress(): string {
-  for (const addresses of Object.values(networkInterfaces())) {
-    for (const address of addresses ?? []) {
-      if (address.family === 'IPv4' && !address.internal) {
-        return address.address
-      }
+export async function pruneDownloads(
+  downloadsDir: string,
+  keep = MAX_KEPT_DOWNLOADS,
+): Promise<void> {
+  const entries = await readdir(downloadsDir).catch(() => [] as string[])
+  const zips: { name: string; mtimeMs: number }[] = []
+  for (const entry of entries) {
+    if (!entry.toLowerCase().endsWith('.zip')) continue
+    const full = join(downloadsDir, entry)
+    const entryStat = await stat(full).catch(() => null)
+    if (entryStat !== null && entryStat.isFile()) {
+      zips.push({ name: entry, mtimeMs: entryStat.mtimeMs })
     }
   }
-  throw new Error('No LAN address found on this server')
-}
-
-function closeActiveDownload(): void {
-  if (activeDownload !== undefined) {
-    clearTimeout(activeDownload.timer)
-    activeDownload.server.close()
-    activeDownload = undefined
+  zips.sort((a, b) => b.mtimeMs - a.mtimeMs)
+  for (const stale of zips.slice(keep)) {
+    await rm(join(downloadsDir, stale.name), { force: true }).catch((error) => {
+      logError('Failed to prune old world download', error, {
+        file: stale.name,
+      })
+    })
   }
 }
 
@@ -108,9 +101,11 @@ export const downloadWorld = sdk.Action.withInput(
   'download-world',
   {
     name: i18n('Download World'),
-    description: i18n('Serve a world folder as a temporary download link'),
+    description: i18n(
+      'Save a world folder as a ZIP served by the World Downloads address',
+    ),
     warning: i18n(
-      'Anyone on your LAN can download the world while the link is live',
+      'Anyone able to reach the World Downloads address can download the world',
     ),
     allowedStatuses: 'any',
     group: null,
@@ -128,50 +123,30 @@ export const downloadWorld = sdk.Action.withInput(
     }
     try {
       const worldsDir = sdk.volumes.main.subpath('config/worlds_local')
+      const downloadsDir = sdk.volumes.main.subpath('downloads')
       await mkdir(worldsDir, { recursive: true })
+      await mkdir(downloadsDir, { recursive: true })
       const { archiveName, entries } = await collectWorldFiles(
         worldsDir,
         worldName,
       )
-      const payload = zipSync(entries, { level: 6 })
-      const address = lanAddress()
-
-      closeActiveDownload()
-      let port = LINK_PORT_START
-      let server: Server | undefined
-      for (let attempt = 0; attempt < LINK_PORT_TRIES; attempt += 1) {
-        const candidate = LINK_PORT_START + attempt
-        try {
-          server = await listenCandidate(candidate, payload, archiveName, () =>
-            closeActiveDownload(),
-          )
-          port = candidate
-          break
-        } catch (error) {
-          logError(`Download port ${candidate} unavailable`, error)
-        }
-      }
-      if (server === undefined) {
-        throw new Error('Could not open a download port')
-      }
-      const url = `http://${address}:${port}/${encodeURIComponent(archiveName)}`
-      const timer = setTimeout(() => {
-        closeActiveDownload()
-        console.info('World download link expired')
-      }, LINK_TTL_MS)
-      activeDownload = { server, timer, url }
-      console.info(`Serving world ${worldName} at ${url} for 10 minutes`)
+      await pruneDownloads(downloadsDir)
+      await writeFile(
+        join(downloadsDir, archiveName),
+        zipSync(entries, { level: 6 }),
+      )
+      console.info(`Prepared world download ${archiveName}`)
       return {
         version: '1',
         title: i18n('World download ready'),
         message: i18n(
-          'Open or copy the link within 10 minutes to download the world ZIP',
+          'Open the World Downloads address from Interfaces and download the file',
         ),
         result: {
           type: 'single',
-          value: url,
+          value: archiveName,
           copyable: true,
-          qr: true,
+          qr: false,
           masked: false,
         },
       }
@@ -181,28 +156,3 @@ export const downloadWorld = sdk.Action.withInput(
     }
   },
 )
-
-export function listenCandidate(
-  port: number,
-  payload: Uint8Array,
-  archiveName: string,
-  onServed: () => void,
-): Promise<Server> {
-  return new Promise((resolve, reject) => {
-    const server = createServer((req, res) => {
-      res.writeHead(200, {
-        'Content-Type': 'application/zip',
-        'Content-Length': payload.byteLength,
-        'Content-Disposition': `attachment; filename="${archiveName}"`,
-      })
-      res.end(payload)
-      console.info('World download served, closing link')
-      onServed()
-    })
-    server.once('error', reject)
-    server.listen(port, '0.0.0.0', () => {
-      server.removeListener('error', reject)
-      resolve(server)
-    })
-  })
-}

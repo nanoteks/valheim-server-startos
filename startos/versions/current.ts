@@ -76,18 +76,18 @@ export async function migrateToNewLayout(
 }
 
 export const current = VersionInfo.of({
-  version: '1.4.0:0',
+  version: '1.5.0:0',
   releaseNotes: {
     en_US:
-      'New Download World action (temporary LAN link for a world ZIP), leaner backups (Steam cache excluded, old-layout restores migrate).',
+      'Download World saves the world as a ZIP served by a new World Downloads address (LAN, port 28763). Leaner backups (Steam cache excluded, old-layout restores migrate).',
     es_ES:
-      'Nueva acción Descargar mundo (enlace LAN temporal para el ZIP del mundo), copias más ligeras (caché de Steam excluida, restauraciones antiguas migran).',
+      'Descargar mundo guarda el mundo como ZIP servido por la nueva dirección Descargas de mundos (LAN, puerto 28763). Copias más ligeras (caché de Steam excluida, restauraciones antiguas migran).',
     de_DE:
-      'Neue Aktion Welt herunterladen (temporärer LAN-Link für das Welt-ZIP), schlankere Backups (Steam-Cache ausgeschlossen, alte Restores migrieren).',
+      'Welt herunterladen speichert die Welt als ZIP unter der neuen Adresse Welt-Downloads (LAN, Port 28763). Schlankere Backups (Steam-Cache ausgeschlossen, alte Restores migrieren).',
     pl_PL:
-      'Nowa akcja Pobierz świat (tymczasowy link LAN do ZIP-a świata), lżejsze kopie (pamięć podręczna Steam wykluczona, stare przywracania migrują).',
+      'Pobierz świat zapisuje świat jako ZIP pod nowym adresem Pobieranie światów (LAN, port 28763). Lżejsze kopie (pamięć podręczna Steam wykluczona, stare przywracania migrują).',
     fr_FR:
-      'Nouvelle action Télécharger le monde (lien LAN temporaire pour le ZIP du monde), sauvegardes allégées (cache Steam exclu, anciennes restaurations migrent).',
+      'Télécharger le monde enregistre le monde comme ZIP servi par la nouvelle adresse Téléchargements de mondes (LAN, port 28763). Sauvegardes allégées (cache Steam exclu, anciennes restaurations migrent).',
   },
   migrations: {
     // Kept for installs skipping 1.2.0:0 — covers any pre-1.2.0 layout.

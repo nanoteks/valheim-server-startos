@@ -27,6 +27,7 @@
 ## Image and Container Runtime
 
 - Image: `ghcr.io/community-valheim-tools/valheim-server:1.4.0`, architecture `x86_64` only (upstream publishes no arm64 build; `aarch64` was dropped in 1.2.0:0).
+- Sidecar image: `busybox:1.37.0` (`downloads`), serves `main/downloads/` via `httpd` for world downloads.
 - Entrypoint: upstream `bootstrap` ends in `exec tini -- supervisord`, run via `sdk.useEntrypoint()` with `runAsInit: true` (tini must be PID 1).
 - Subcontainers: `valheim-server-sub` runs daemon `valheim-server`.
 - Env passed in `main.ts`: `SERVER_NAME`, `WORLD_NAME`, `SERVER_PASS`, `SERVER_PUBLIC` (`1`/`0`, upstream also accepts `true`/`false`), `SERVER_PORT=2456`, `TZ=Etc/UTC`.
@@ -37,6 +38,7 @@
 - Volume `main`: persistent game data.
   - subpath `config` → `/config` (server config; worlds at `/config/worlds_local`, permitted list).
   - subpath `data` → `/opt/valheim` (SteamCMD server files + depot manifest cache, needed for updates).
+  - subpath `downloads` → `/downloads` in the sidecar only (readonly; world ZIPs staged by `Download World`, pruned to latest 3).
 - Volume `startos` (unmounted): package state only, holds `store.json`. Backed up but never mounted into the container.
 - 1.2.0:0 migrated the Teriyakidactyl layout (`world/`, `app/`) to this one and removed the orphaned trees; see `startos/versions/current.ts`.
 
@@ -52,6 +54,7 @@ None.
 
 - Host `game` binds port range 2456-2457 (2 ports, TCP+UDP) via `bindPortRange`. Valheim uses UDP 2456-2457.
 - Range interface `game`, type `api`, named Game Server. User enables LAN/WAN per address in Interfaces tab; WAN requires router UDP 2456-2457 forwarding. No Tor/clearnet claims.
+- Host `downloads` binds internal TCP 8080 (busybox `httpd` sidecar) with preferred external port 28763, protocol `http`. Interface `downloads`, type `api`, named World Downloads — serves `main/downloads/*.zip` over LAN (on by default) for the `Download World` action. WAN off by default.
 - No web UI.
 
 ## Installation and First-Run Flow
@@ -94,15 +97,16 @@ package_id: 'valheim-server'
 image:
   architectures: ['x86_64']
   upstream: 'ghcr.io/community-valheim-tools/valheim-server:1.4.0'
-subcontainers: ['valheim-server-sub']
+subcontainers: ['valheim-server-sub', 'downloads-sub']
 volumes:
-  main: { config: '/config', data: '/opt/valheim' }
+  main: { config: '/config', data: '/opt/valheim', downloads: '/downloads (sidecar, ro)' }
   startos: { store.json: 'serverName, worldName, serverPass, serverPublic' }
 file_models: ['store.json']
 startos_managed_env_vars: ['SERVER_NAME', 'WORLD_NAME', 'SERVER_PASS', 'SERVER_PUBLIC', 'SERVER_PORT', 'TZ']
 dependencies: []
 interfaces:
   game: { ports: '2456-2457', type: 'api', transport: 'TCP+UDP' }
+  downloads: { port: '8080 internal / 28763 preferred external', type: 'api', transport: 'TCP http' }
 actions: ['configure', 'upload-world', 'download-world']
 tasks: []
 health_checks: ['Game Server: checkPortListening 2456']

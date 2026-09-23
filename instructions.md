@@ -35,5 +35,5 @@ The `Upload World` action downloads a world ZIP from a URL you serve on your own
 
 Two ways to get a world off the server:
 
-- **Download link (quickest):** run Actions → `Download World`, enter the world name, and open or copy the link (or scan the QR) within 10 minutes. Anyone on your LAN can fetch while the link is live.
+- **Download link (quickest):** run Actions → `Download World` and enter the world name. Copy the shown file name (or scan the QR), then open the `World Downloads` address from the service's Interfaces tab and download the file — e.g. `http://<your-box-ip>:28763/<name>.zip` (the Interfaces tab shows the exact address; use the LAN one).
 - **Package backup:** System → Backups → back up Valheim Server, then download the backup to your PC. Worlds live under `main/config/worlds_local/` inside it — unzip that folder for wipe-restore or a move to a non-Start9 server. Server files are excluded from backups and re-download on first boot after a restore (5-10 min).

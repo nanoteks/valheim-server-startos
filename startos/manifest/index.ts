@@ -6,7 +6,8 @@ export const manifest = setupManifest({
   title: 'Valheim Server',
   license: 'MIT',
   packageRepo: 'https://github.com/nanoteks/valheim-server-startos',
-  upstreamRepo: 'https://github.com/community-valheim-tools/valheim-server-docker',
+  upstreamRepo:
+    'https://github.com/community-valheim-tools/valheim-server-docker',
   marketingUrl: 'https://www.valheimgame.com',
   donationUrl: null,
   description: { short, long },
@@ -14,9 +15,12 @@ export const manifest = setupManifest({
   images: {
     'valheim-server': {
       source: {
-        dockerTag:
-          'ghcr.io/community-valheim-tools/valheim-server:1.4.0',
+        dockerTag: 'ghcr.io/community-valheim-tools/valheim-server:1.4.0',
       },
+      arch: ['x86_64'],
+    },
+    downloads: {
+      source: { dockerTag: 'busybox:1.37.0' },
       arch: ['x86_64'],
     },
   },
