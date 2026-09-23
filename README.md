@@ -58,13 +58,13 @@ None.
 
 - Install seeds `store.json` defaults. First start downloads/validates server via SteamCMD (5-10 min).
 - User runs `Configure` action to set name/world/password/visibility; daemon restarts on change.
-- User runs `Upload World` to upload a ZIP with one complete world: either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted by the server on load). Extracted into `main/config/worlds_local`, where the server reads worlds.
+- User runs `Upload World` with the HTTP(S) URL of a ZIP holding one complete world: either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted by the server on load). Downloaded (1 GB cap) and extracted into `main/config/worlds_local`, where the server reads worlds.
 - Client connects via Steam Join IP `<host>:2456` + password.
 
 ## Actions
 
 - `configure`: input form for serverName, worldName, serverPass, serverPublic. Prefill from `store.json` via `.once()`; handler `merge()`s back. `allowedStatuses: any`.
-- `upload-world`: accepts one `.zip` archive with one complete world (current-format folder or legacy `.db`+`.fwl` pair). Rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/config/worlds_local`. The staged file is verified before extraction; every failure names its cause.
+- `upload-world`: takes one `worldUrl` (`http(s)` URL of a `.zip` archive with one complete world: current-format folder or legacy `.db`+`.fwl` pair). Downloads with a 1 GB cap, then the same validation as ever: rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/config/worlds_local`. File-picker inputs are deliberately not used — StartOS does not stage action file uploads (the raw browser `File` arrives as `{}` and fails input validation).
 
 ## Tasks
 

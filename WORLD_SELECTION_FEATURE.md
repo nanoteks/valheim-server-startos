@@ -39,11 +39,12 @@ Registers the new `uploadWorld` action alongside `configure`.
 
 #### `startos/actions/uploadWorld.ts`
 
-`upload-world` action accepting one `.zip` file:
+`upload-world` action accepting one world-ZIP URL:
 
-1. Parses the archive in-process with `fflate` (no `unzip` binary — the
-   StartOS host doesn't ship one). An unreadable file is rejected as not a
-   valid ZIP.
+1. Downloads the ZIP over HTTP(S) with `fetch` (1 GB cap enforced via
+   `content-length` and a running byte count), then parses it in-process with
+   `fflate` (no `unzip` binary — the StartOS host doesn't ship one). Only
+   `http(s)` URLs ending in `.zip` are accepted.
 2. Rejects empty archives and unsafe paths (absolute paths, `..` segments,
    Windows drive prefixes, backslash tricks).
 3. Accepts the archive if it holds at least one complete world:
@@ -66,9 +67,10 @@ while the server runs; the warning is the guard.
 
 ### User flow
 
-1. User runs Actions → `Upload World` and submits a ZIP containing one
-   complete world folder (`.db2` + `.fwl2` + `.chunk`).
-2. The action validates and extracts the archive into `main/config/worlds_local`.
+1. User serves the world ZIP over the LAN (`python3 -m http.server 8000`
+   in its folder) and runs Actions → `Upload World` with its URL.
+2. The action downloads (1 GB cap), validates, and extracts the archive
+   into `main/config/worlds_local`, then deletes the temporary download.
 3. User runs Actions → `Configure` and sets World Name to the uploaded
    world's name (the exact file base name).
 4. The service restarts with `WORLD_NAME` pointing at the uploaded world.

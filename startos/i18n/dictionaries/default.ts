@@ -20,10 +20,10 @@ const dict = {
   Configure: 13,
   'Set server name, world, password, and visibility': 14,
   // actions/uploadWorld.ts
-  'World ZIP archive': 15,
-  'Upload a ZIP with one complete world: a current-format world folder (.db2, .fwl2, .chunk files) or legacy world files (.db + .fwl pair)': 16,
+  'World ZIP URL': 15,
+  'HTTP(S) URL of a ZIP with one complete world: a current-format world folder (.db2, .fwl2, .chunk files) or legacy world files (.db + .fwl pair). Serve it from your PC, e.g. http://192.168.1.10:8000/Fjordhome.zip': 16,
   'Upload World': 17,
-  'Upload a complete Valheim world ZIP archive to the server volume': 18,
+  'Download a Valheim world ZIP archive from a URL into the server volume': 18,
   'Stop the server before replacing files for the active world': 19,
 } as const
 

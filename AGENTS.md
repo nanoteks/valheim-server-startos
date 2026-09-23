@@ -20,5 +20,6 @@ Work this package's `TODO.md` from top to bottom. Keep `README.md` (technical re
 - Daemon must keep `runAsInit: true`: the upstream entrypoint ends in `exec tini -- supervisord`, and tini aborts when it is not PID 1.
 - No chown oneshot: the image boots as root and chowns `/config` + `/opt/valheim` itself. (The retired Teriyakidactyl image ran as uid 1000 and needed one.)
 - Actions execute on the StartOS host, whose base image ships no `unzip`: `uploadWorld.ts` parses ZIPs in-process (`fflate`, bundled via `ncc`). Never shell out to host binaries from actions.
+- `Value.file` action inputs are unwired on current StartOS: nothing stages the browser `File`, so it arrives as `{}` and fails zod input validation. `upload-world` takes a URL and downloads host-side instead — do not reintroduce file inputs until the OS stages them.
 - x86_64 only: upstream publishes no arm64 build, so the manifest must not re-add `aarch64`.
 - Registry CI (`tagAndRelease.yml`, `release.yml`) is disabled (`*.disabled`) until community-registry submission — it needs Start9 org vars/secrets this repo doesn't have.

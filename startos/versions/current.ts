@@ -76,20 +76,21 @@ export async function migrateToNewLayout(
 }
 
 export const current = VersionInfo.of({
-  version: '1.2.0:0',
+  version: '1.3.0:0',
   releaseNotes: {
     en_US:
-      'New maintained upstream (community-valheim-tools 1.4.0, Valheim 1.0 native). Worlds migrate automatically to the new layout; x86_64 only.',
+      'Upload World takes a ZIP URL instead of a file upload (StartOS does not stage action file inputs). Worlds still migrate from the old layout automatically.',
     es_ES:
-      'Nueva imagen mantenida (community-valheim-tools 1.4.0, nativa de Valheim 1.0). Los mundos migran automáticamente al nuevo diseño; solo x86_64.',
+      'Subir mundo acepta una URL del ZIP en lugar de subida de archivos (StartOS no transfiere archivos de acciones). Los mundos siguen migrando automáticamente.',
     de_DE:
-      'Neue gepflegte Upstream-Version (community-valheim-tools 1.4.0, Valheim-1.0-nativ). Welten werden automatisch ins neue Layout migriert; nur x86_64.',
+      'Welt hochladen nimmt nun eine ZIP-URL statt eines Datei-Uploads (StartOS stellt Aktionsdateien nicht bereit). Welten migrieren weiterhin automatisch.',
     pl_PL:
-      'Nowy wspierany obraz (community-valheim-tools 1.4.0, natywny dla Valheim 1.0). Światy migrują automatycznie do nowego układu; tylko x86_64.',
+      'Prześlij świat przyjmuje adres URL ZIP-a zamiast przesyłania pliku (StartOS nie przekazuje plików akcji). Światy nadal migrują automatycznie.',
     fr_FR:
-      'Nouvelle image maintenue (community-valheim-tools 1.4.0, native Valheim 1.0). Les mondes migrent automatiquement vers la nouvelle disposition ; x86_64 uniquement.',
+      'Téléverser un monde prend une URL ZIP au lieu d’un envoi de fichier (StartOS ne transfère pas les fichiers d’actions). Les mondes migrent toujours automatiquement.',
   },
   migrations: {
+    // Kept for installs skipping 1.2.0:0 — covers any pre-1.2.0 layout.
     up: async () => {
       await migrateToNewLayout()
     },

@@ -1,5 +1,6 @@
 import { unzipSync } from 'fflate'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { i18n } from '../i18n'
 import { logError } from '../errorHandler'
@@ -12,14 +13,19 @@ const LEGACY_EXTENSIONS = new Set(['.db', '.fwl'])
 
 export type WorldArchiveKind = 'current' | 'legacy'
 
+export const MAX_DOWNLOAD_BYTES = 1024 * 1024 * 1024
+
 export const inputSpec = InputSpec.of({
-  worldZip: Value.file({
-    name: i18n('World ZIP archive'),
+  worldUrl: Value.text({
+    name: i18n('World ZIP URL'),
     description: i18n(
-      'Upload a ZIP with one complete world: a current-format world folder (.db2, .fwl2, .chunk files) or legacy world files (.db + .fwl pair)',
+      'HTTP(S) URL of a ZIP with one complete world: a current-format world folder (.db2, .fwl2, .chunk files) or legacy world files (.db + .fwl pair). Serve it from your PC, e.g. http://192.168.1.10:8000/Fjordhome.zip',
     ),
-    extensions: ['.zip'],
     required: true,
+    default: null,
+    minLength: 12,
+    maxLength: 2048,
+    masked: false,
   }),
 })
 
@@ -153,7 +159,7 @@ export const uploadWorld = sdk.Action.withInput(
   {
     name: i18n('Upload World'),
     description: i18n(
-      'Upload a complete Valheim world ZIP archive to the server volume',
+      'Download a Valheim world ZIP archive from a URL into the server volume',
     ),
     warning: i18n(
       'Stop the server before replacing files for the active world',
@@ -165,24 +171,14 @@ export const uploadWorld = sdk.Action.withInput(
   inputSpec,
   async () => ({}),
   async ({ input }) => {
-    let archivePath: string | undefined
-    let worldPath: string | undefined
+    const worldPath = sdk.volumes.main.subpath('config/worlds_local')
     try {
-      const staged = (input as { worldZip?: unknown } | null)?.worldZip as
-        { path?: unknown } | undefined
-      if (typeof staged?.path !== 'string' || staged.path.length === 0) {
-        throw new Error('Upload input missing staged file path')
+      const rawUrl = (input as { worldUrl?: unknown } | null)?.worldUrl
+      if (typeof rawUrl !== 'string' || rawUrl.trim().length === 0) {
+        throw new Error('World URL must not be empty')
       }
-      archivePath = staged.path
-      worldPath = sdk.volumes.main.subpath('config/worlds_local')
-
-      const stagedStat = await stat(archivePath).catch(() => null)
-      if (stagedStat === null || !stagedStat.isFile()) {
-        throw new Error(`Staged upload not found or not a file: ${archivePath}`)
-      }
-
-      const { kinds, fileCount } = await extractWorldArchive(
-        archivePath,
+      const { kinds, fileCount } = await importWorldFromUrl(
+        rawUrl.trim(),
         worldPath,
       )
       console.info(
@@ -190,18 +186,79 @@ export const uploadWorld = sdk.Action.withInput(
       )
     } catch (error) {
       logError('Failed to upload Valheim world archive', error, {
-        archivePath,
         destination: worldPath,
       })
       throw error
-    } finally {
-      if (archivePath !== undefined) {
-        await rm(archivePath, { force: true }).catch((error) => {
-          logError('Failed to remove temporary world archive', error, {
-            archivePath,
-          })
-        })
-      }
     }
   },
 )
+
+export async function importWorldFromUrl(
+  worldUrl: string,
+  worldPath: string,
+): Promise<{ kinds: WorldArchiveKind[]; fileCount: number }> {
+  let parsed: URL
+  try {
+    parsed = new URL(worldUrl)
+  } catch {
+    throw new Error(`Not a valid URL: ${worldUrl}`)
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(
+      `Only http(s) URLs are supported, got: ${parsed.protocol}//...`,
+    )
+  }
+  if (!parsed.pathname.toLowerCase().endsWith('.zip')) {
+    throw new Error('URL must point to a .zip archive')
+  }
+
+  const archivePath = join(
+    tmpdir(),
+    `valheim-world-${Date.now()}-${Math.floor(Math.random() * 1e6)}.zip`,
+  )
+  try {
+    const response = await fetch(worldUrl).catch((error) => {
+      throw new Error(`Failed to download ${worldUrl}: ${messageOf(error)}`)
+    })
+    if (!response.ok || response.body === null) {
+      throw new Error(
+        `Download failed with status ${response.status} for ${worldUrl}`,
+      )
+    }
+    const declared = response.headers.get('content-length')
+    if (declared !== null && Number(declared) > MAX_DOWNLOAD_BYTES) {
+      throw new Error(
+        `Archive too large (${declared} bytes, limit is ${MAX_DOWNLOAD_BYTES})`,
+      )
+    }
+    await writeDownload(response.body, archivePath)
+    return await extractWorldArchive(archivePath, worldPath)
+  } finally {
+    await rm(archivePath, { force: true }).catch(() => {})
+  }
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function writeDownload(
+  body: ReadableStream<Uint8Array>,
+  destination: string,
+): Promise<void> {
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > MAX_DOWNLOAD_BYTES) {
+      throw new Error(
+        `Archive too large (over ${MAX_DOWNLOAD_BYTES} bytes), download aborted`,
+      )
+    }
+    chunks.push(value)
+  }
+  await writeFile(destination, Buffer.concat(chunks))
+}

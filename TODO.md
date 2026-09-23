@@ -26,8 +26,8 @@
 - [x] `startos/actions/`: `configure` (serverName/worldName/serverPass/serverPublic),
 -       `upload-world` (ZIP import into `config/worlds_local`, staged file verified).
 - [x] `startos/init/`: `seedFiles` merges `store.json` defaults.
-- [x] `startos/versions/`: `1.2.0:0` with localized release notes and a data migration
--       (`world/worlds_local` → `config/worlds_local`, orphaned `world`+`app` removed), `down: IMPOSSIBLE`.
+- [x] `startos/versions/`: `1.3.0:0` with localized release notes and the 1.2.0:0 data migration
+-       (kept: covers installs skipping 1.2.0:0), `down: IMPOSSIBLE`.
 
 ## Docs
 
@@ -37,8 +37,8 @@
 ## Build, test, ship
 
 - [x] `make`: `tsc` clean, x86_64 packs.
-- [ ] Sideload 1.2.0:0 on a StartOS box: update migrates worlds, first boot completes SteamCMD, `Configure`,
-      join via Steam `Join IP <host>:2456`, confirm health goes green; Upload World (tiny + real ZIP).
+- [ ] Sideload 1.3.0:0 on a StartOS box: Upload World via LAN URL (tiny + real ZIP), `Configure`,
+      join via Steam `Join IP <host>:2456`, confirm health goes green.
 - [ ] Backup / restore sanity check on the box.
 - [ ] Re-read README/instructions against actual behavior after the box test.
 - [ ] CI: `tagAndRelease.yml` + `release.yml` disabled (`*.disabled`) — they require

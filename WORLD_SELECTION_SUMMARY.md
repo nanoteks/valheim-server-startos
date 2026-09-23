@@ -1,7 +1,7 @@
 # World Selection Feature - Implementation Summary
 
 The `Configure` action now invites reusing an existing world name, and a new
-`Upload World` action imports a current-format world ZIP into `main/config`.
+`Upload World` action downloads a world ZIP from a URL into `main/config`.
 There is no automatic discovery: no module lists the worlds directory, and no world list
 is logged. The user types the world name in `Configure`.
 
@@ -9,7 +9,7 @@ is logged. The user types the world name in `Configure`.
 
 ### 1. Upload World action (`startos/actions/uploadWorld.ts`) — NEW
 
-- Accepts one `.zip` via `Value.file`.
+- Accepts one world-ZIP URL via `Value.text` (`http(s)`, `.zip` suffix, 1 GB cap).
 - Rejects empty/unreadable archives and unsafe entry paths (absolute, `..`,
   drive prefixes).
 - Accepts a current-format world folder (`.db2` + `.fwl2` + `.chunk`/`.chunks`
