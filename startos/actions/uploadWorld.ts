@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { i18n } from '../i18n'
 import { logError } from '../errorHandler'
@@ -165,10 +165,22 @@ export const uploadWorld = sdk.Action.withInput(
   inputSpec,
   async () => ({}),
   async ({ input }) => {
-    const archivePath = input.worldZip.path
-    const worldPath = sdk.volumes.main.subpath('world/worlds_local')
-
+    let archivePath: string | undefined
+    let worldPath: string | undefined
     try {
+      const staged = (input as { worldZip?: unknown } | null)?.worldZip as
+        { path?: unknown } | undefined
+      if (typeof staged?.path !== 'string' || staged.path.length === 0) {
+        throw new Error('Upload input missing staged file path')
+      }
+      archivePath = staged.path
+      worldPath = sdk.volumes.main.subpath('world/worlds_local')
+
+      const stagedStat = await stat(archivePath).catch(() => null)
+      if (stagedStat === null || !stagedStat.isFile()) {
+        throw new Error(`Staged upload not found or not a file: ${archivePath}`)
+      }
+
       const { kinds, fileCount } = await extractWorldArchive(
         archivePath,
         worldPath,
@@ -183,11 +195,13 @@ export const uploadWorld = sdk.Action.withInput(
       })
       throw error
     } finally {
-      await rm(archivePath, { force: true }).catch((error) => {
-        logError('Failed to remove temporary world archive', error, {
-          archivePath,
+      if (archivePath !== undefined) {
+        await rm(archivePath, { force: true }).catch((error) => {
+          logError('Failed to remove temporary world archive', error, {
+            archivePath,
+          })
         })
-      })
+      }
     }
   },
 )

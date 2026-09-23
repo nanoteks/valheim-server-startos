@@ -1,18 +1,18 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '1.1.0:2',
+  version: '1.1.0:3',
   releaseNotes: {
     en_US:
-      'Fixes server crash-loop (volumes now chowned to the container user) and Upload World failing on the box (ZIP parsed in-process, no unzip binary needed)',
+      'Upload World now diagnoses staging problems instead of failing silently (staged file is verified before extraction)',
     es_ES:
-      'Corrige el reinicio en bucle del servidor (volúmenes ahora del usuario del contenedor) y Subir mundo fallando en el servidor (ZIP procesado internamente, sin unzip)',
+      'Subir mundo ahora diagnostica problemas de carga en lugar de fallar en silencio (el archivo se verifica antes de extraer)',
     de_DE:
-      'Behebt Server-Neustartschleife (Volumes gehören nun dem Container-Nutzer) und fehlgeschlagene Welt-Uploads (ZIP wird intern verarbeitet, kein unzip nötig)',
+      'Welt hochladen meldet nun Upload-Probleme statt still zu scheitern (Datei wird vor dem Entpacken geprüft)',
     pl_PL:
-      'Naprawia pętlę restartów serwera (wolumeny należą do użytkownika kontenera) i nieudane przesyłanie świata (ZIP przetwarzany wewnętrznie, bez unzip)',
+      'Prześlij świat teraz zgłasza problemy z przesyłaniem zamiast cicho zawodzić (plik jest weryfikowany przed rozpakowaniem)',
     fr_FR:
-      'Corrige la boucle de redémarrage du serveur (volumes attribués à l’utilisateur du conteneur) et l’échec de Téléverser un monde (ZIP traité en interne, sans unzip)',
+      'Téléverser un monde signale désormais les problèmes de dépôt au lieu d’échouer en silence (fichier vérifié avant extraction)',
   },
   migrations: {
     up: async ({ effects }) => {},
