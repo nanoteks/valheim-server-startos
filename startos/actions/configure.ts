@@ -23,7 +23,7 @@ export const inputSpec = InputSpec.of({
   worldName: Value.text({
     name: i18n('World Name'),
     description: i18n(
-      'World seed name stored under /world. Enter an existing world name or create a new one.',
+      'World name stored under /world/worlds_local. Enter an existing world name or create a new one.',
     ),
     required: true,
     default: defaultWorldName,

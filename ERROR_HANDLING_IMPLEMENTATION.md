@@ -8,7 +8,7 @@ Comprehensive error handling has been added to the Valheim Server StartOS packag
 ### `startos/errorHandler.ts`
 A centralized error handling module featuring:
 - **PackageError class**: Custom error type for package-specific errors with context support
-- **logError()**: Unified error logging with timestamps, i18n support, and context information
+- **logError()**: Unified error logging with timestamps and context information
 - **withErrorHandling()**: Generic async wrapper that:
   - Wraps operations with try-catch
   - Logs errors with context

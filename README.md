@@ -56,13 +56,13 @@ None.
 
 - Install seeds `store.json` defaults. First start downloads/validates server via SteamCMD (5-10 min).
 - User runs `Configure` action to set name/world/password/visibility; daemon restarts on change.
-- User runs `Upload World` to upload a ZIP containing one complete current-format world folder. The archive must include `.db2`, `.fwl2`, and `.chunk` files and is extracted into the `main/world` volume.
+- User runs `Upload World` to upload a ZIP with one complete world: either a current-format world folder (`.db2`, `.fwl2`, `.chunk` files) or legacy world files (`.db` + `.fwl` pair, converted by the server on load). Extracted into `main/world/worlds_local`, where the server reads worlds (`-savedir /world`).
 - Client connects via Steam Join IP `<host>:2456` + password.
 
 ## Actions
 
 - `configure`: input form for serverName, worldName, serverPass, serverPublic. Prefill from `store.json` via `.once()`; handler `merge()`s back. `allowedStatuses: any`.
-- `upload-world`: accepts one `.zip` archive containing a complete world folder. The action rejects unsafe archive paths and incomplete archives, then extracts the files into `main/world`.
+- `upload-world`: accepts one `.zip` archive with one complete world (current-format folder or legacy `.db`+`.fwl` pair). Rejects unsafe paths, archives with no complete world, current-format files outside a world folder, and unmatched legacy halves. Extracts into `main/world/worlds_local`.
 
 ## Tasks
 

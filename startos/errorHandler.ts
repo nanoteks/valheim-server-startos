@@ -1,22 +1,19 @@
-import { i18n } from './i18n'
-
 /**
  * Centralized error handling for the package.
- * Logs errors with i18n support and maintains error context.
  */
 
 export class PackageError extends Error {
   constructor(
-	message: string,
-	public readonly context?: Record<string, unknown>,
+    message: string,
+    public readonly context?: Record<string, unknown>,
   ) {
-	super(message)
-	this.name = 'PackageError'
+    super(message)
+    this.name = 'PackageError'
   }
 }
 
 /**
- * Logs an error with context and i18n translation
+ * Logs an error with context
  */
 export function logError(
   message: string,
@@ -26,7 +23,7 @@ export function logError(
   const timestamp = new Date().toISOString()
   const contextStr = context ? JSON.stringify(context) : ''
   const errorStr =
-	error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+    error instanceof Error ? `${error.name}: ${error.message}` : String(error)
 
   console.error(`[${timestamp}] ${message}`)
   if (errorStr) console.error(`  Error: ${errorStr}`)
@@ -42,19 +39,13 @@ export async function withErrorHandling<T>(
   fallback?: T,
 ): Promise<T | undefined> {
   try {
-	return await operation()
+    return await operation()
   } catch (error) {
-	logError(
-	  `Failed to ${operationName}`,
-	  error,
-	  { operationName },
-	)
-	if (fallback !== undefined) {
-	  console.warn(
-		`Proceeding with fallback value for ${operationName}`,
-	  )
-	  return fallback
-	}
-	throw new PackageError(`${operationName} failed`, { cause: error })
+    logError(`Failed to ${operationName}`, error, { operationName })
+    if (fallback !== undefined) {
+      console.warn(`Proceeding with fallback value for ${operationName}`)
+      return fallback
+    }
+    throw new PackageError(`${operationName} failed`, { cause: error })
   }
 }

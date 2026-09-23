@@ -1,206 +1,154 @@
 # World Selection Feature Documentation
 
 ## Overview
-This feature allows users to select from existing world files when configuring their Valheim server, enabling them to easily restore or boot up previously uploaded worlds without manually typing world names.
+
+Two related changes make it easier to run an existing Valheim world instead of
+always generating a new one: the `Configure` action guides the user toward
+reusing a world name, and a new `Upload World` action imports a world from a
+ZIP archive into the `main/world` volume.
+
+Note: there is no automatic world discovery. No code lists the `/world`
+directory and no world list is shown or logged. The user types (or reuses) the
+world name in `Configure`.
 
 ## Changes Made
 
-### New Files
-#### `startos/actions/worldDiscovery.ts`
-A dedicated module for world discovery with:
-- **DiscoveredWorld interface**: Represents a discovered world with metadata
-- **WorldDiscoveryResult interface**: Encapsulates discovery results and errors
-- **discoverWorlds()**: Async function that discovers worlds in the main volume
-  - Reads the `/world` directory from the main volume
-  - Gracefully handles missing or inaccessible directories
-  - Returns empty list if volume isn't available (on first run)
-  - Errors are logged and returned without throwing
+### Modified files
 
-- **extractWorldName()**: Utility function that removes file extensions
-  - Handles `.db`, `.fwl`, `.old`, `.backup` extensions
-  - Case-insensitive matching
-  - Trims whitespace
-
-- **deduplicateWorldNames()**: Utility to extract unique world names
-  - Removes duplicates (since .db and .fwl files create pairs)
-  - Case-insensitive comparison
-  - Returns sorted list for consistent UI
-
-### Modified Files
 #### `startos/actions/configure.ts`
-Enhanced the configure action with world discovery integration:
 
-1. **Import added**: `import { discoverWorlds } from './worldDiscovery'`
+1. **Input spec updated**: the `worldName` field description now reads
+   "World seed name stored under /world. Enter an existing world name or
+   create a new one.", telling users an existing world's name is acceptable.
 
-2. **Input spec updated**:
-   - `worldName` field description now mentions:
-	 - "Enter an existing world name or create a new one"
-	 - Informs users they can select existing worlds
+2. **Prefill callback hardened**: `storeJson.read().once()` is wrapped in
+   try-catch. A read failure logs via `logError()` and falls back to the
+   file-model defaults instead of failing the form.
 
-3. **getRenderInfo callback enhanced**:
-   - Calls `discoverWorlds()` to fetch available worlds
-   - Logs available worlds to console for visibility
-   - Shows warnings if discovery encounters issues
-   - Still returns current/default values even if discovery fails
-   - Gracefully falls back to defaults if any error occurs
+3. **Handler improved**:
+   - Trims whitespace from `worldName` and rejects an empty name.
+   - `storeJson.merge()` is wrapped in try-catch: failures are logged with
+     the server/world names as context and rethrown.
+   - Logs the world the configuration was saved with.
 
-4. **Configure handler improved**:
-   - Validates world name is not empty
-   - Trims whitespace from input
-   - Enhanced logging to show which world was selected
-   - Maintains error handling with context
+#### `startos/actions/index.ts`
+
+Registers the new `uploadWorld` action alongside `configure`.
+
+### New files
+
+#### `startos/actions/uploadWorld.ts`
+
+`upload-world` action accepting one `.zip` file:
+
+1. Lists archive entries with `unzip -Z1` (an unreadable archive counts as
+   empty and is rejected).
+2. Rejects empty archives and unsafe paths (absolute paths, `..` segments,
+   Windows drive prefixes, backslash tricks).
+3. Accepts the archive if it holds at least one complete world:
+   - current format: a single top-level world folder containing at least one
+     `.db2`, one `.fwl2`, and one `.chunk`/`.chunks` file;
+   - legacy format: a matched `.db` + `.fwl` pair with the same file name at
+     the archive root (the server converts legacy worlds itself on load).
+   Anything else is rejected with a specific error (flat current-format
+   files, unmatched legacy halves, or no world at all).
+4. Extracts with `unzip -o <archive> -d <main/world/worlds_local>` —
+   `worlds_local` because the server runs with `-savedir /world` and reads
+   worlds from `<savedir>/worlds_local` — and removes the temporary upload
+   afterwards.
+
+Metadata warns the user to stop the server before replacing the active
+world's files. `allowedStatuses` stays `any` so worlds can also be staged
+while the server runs; the warning is the guard.
 
 ## How It Works
 
-### User Flow
-1. User opens the "Configure" action in StartOS
-2. The Configure form loads
-3. During load, `discoverWorlds()` is called in the background
-4. Available worlds are logged to the console
-5. User can:
-   - Select an existing world from previous backups/uploads
-   - Type a new world name to create a new world
-   - The form displays the current world name as default
+### User flow
 
-### Discovery Process
-```
-1. Get main volume reference: sdk.volumes.main
-2. Construct path: <volume>/world
-3. Attempt to read directory
-4. Filter for Valheim world file extensions (.db, .fwl, etc)
-5. Extract base names (without extensions)
-6. Deduplicate and sort
-7. Return list of world names
-```
+1. User runs Actions → `Upload World` and submits a ZIP containing one
+   complete world folder (`.db2` + `.fwl2` + `.chunk`).
+2. The action validates and extracts the archive into `main/world`.
+3. User runs Actions → `Configure` and sets World Name to the uploaded
+   world's name (the exact file base name).
+4. The service restarts with `WORLD_NAME` pointing at the uploaded world.
 
-### Error Handling
-- **Missing volume**: Returns empty list, no error
-- **Directory not found**: Returns empty list, no error (first run scenario)
-- **Permission errors**: Logged and handled gracefully
-- **Corrupt files**: Ignored, valid files are still processed
-- All errors are logged via `logError()` for debugging
+### First installation
 
-## Configuration Flow
+No worlds exist yet; the user accepts the default (`StartOS`) or types a new
+name and the server generates it on boot.
 
-### First Installation
-1. Server installs with default world name "StartOS"
-2. No worlds exist yet in the volume
-3. `discoverWorlds()` returns empty list
-4. User can type a new world name or accept the default
+### After backup restore
 
-### After Backup Restore
-1. Previous worlds are restored to the volume via backup restore
-2. User opens Configure
-3. `discoverWorlds()` finds and lists all restored worlds
-4. User can select from the list or type a new name
-5. Server restarts with the selected world
+Restored worlds are already in the volume via backup/restore. The user types
+the restored world's name in `Configure` — same step 3 above.
 
-### Adding Existing World
-1. User uploads a world file to `/world` directory
-2. User opens Configure
-3. `discoverWorlds()` detects the new world file
-4. User selects it from the available options
-5. Server starts with that world
+## File format reference
 
-## Logging Output
+The server runs with `-savedir /world`, so worlds live under
+`/world/worlds_local` (i.e. `main/world/worlds_local` on the volume):
 
-### When worlds are discovered:
-```
-Available worlds: MyWorld1, MyWorld2, StartOS
-```
+- Current format (Valheim 1.0+): one folder per world containing `_main.N.db2`
+  (world data), `_main.N.fwl2` (metadata: name, seed), `_main.N.chunks`
+  (chunk index), and per-chunk `.chunk` files.
+- Legacy format (pre-1.0): two flat files, `Name.db` (world data) + `Name.fwl`
+  (metadata), which must travel as a pair. Valheim converts legacy saves
+  itself on load — you do not edit files, and the originals are left in
+  place next to the converted world.
 
-### When discovery has issues:
-```
-[2024-01-15T10:30:45.123Z] World discovery notice: World volume not available
-Using default configuration values
-```
+## Logging output
 
-### When world is selected:
+When configuration is saved:
+
 ```
 Successfully updated server configuration with world: MyWorld1
 ```
 
-## File Structure Reference
+When a world archive is imported:
 
-Valheim world files in the `/world` directory typically have:
-- `.db` - World database file (contains world state)
-- `.fwl` - World metadata file (contains world info)
-- `.db.old` - Backup of the world database
-- Possibly `.backup` files
+```
+Uploaded Valheim world archive with <n> world files
+```
 
-The discovery process looks for these patterns and extracts the base world name.
+## Future enhancements
 
-## Future Enhancements
+1. **World discovery**: list `/world` at form-render time and log available
+   names so users don't have to remember them.
+2. **Dropdown UI**: a select input if the SDK supports it.
+3. **World metadata**: show creation date/size for candidate worlds.
+4. **Pre-extraction staging**: extract to a temp dir and move into place so a
+   failed import can't leave a half-written active world.
+5. **Old-format support**: accept `.db`/`.fwl` and convert or warn.
 
-Potential improvements that could be added:
-1. **Extended discovery**: Read `.db` file headers to validate worlds
-2. **World metadata**: Extract world info (creation date, scene, seed)
-3. **Dropdown UI**: Use a select input type if SDK supports it
-4. **World sorting**: Sort by last modified date instead of alphabetically
-5. **World validation**: Verify world files are accessible before offering them
-6. **World size**: Display world file sizes for user reference
-7. **Auto-select**: Remember the last selected world in config
+## Testing recommendations
 
-## Testing Recommendations
+### Fresh installation
 
-### Test Scenario 1: Fresh Installation
-- Install package for the first time
-- Run Configure
-- Verify: No worlds shown, defaults used
+- Install, run `Configure`, accept defaults. Server generates the world.
 
-### Test Scenario 2: After Backup Restore
-- Restore a backup containing multiple worlds
-- Run Configure
-- Verify: All worlds are listed in console output
-- Select a world and verify server starts with it
+### World upload
 
-### Test Scenario 3: Manual World Upload
-- Manually copy world files to the volume
-- Run Configure
-- Verify: New worlds appear in discovery
+- Upload a valid current-format ZIP (world folder) → files land in
+  `main/world/worlds_local/<World>/`.
+- Upload a legacy `.db`+`.fwl` ZIP → files land in `main/world/worlds_local/`
+  and the server converts them on first load.
+- Upload a ZIP with an unsafe path (`../`, absolute) → rejected, nothing written.
+- Upload a ZIP missing part of the world (no `.chunk`, lone `.db`) → rejected
+  with a message naming the missing half.
+- Upload an empty/unreadable ZIP → rejected.
 
-### Test Scenario 4: New World Creation
-- Configure with a new world name
-- Verify: Server creates the new world
-- Run Configure again
-- Verify: The new world appears in discovery next time
+### World selection
 
-### Test Scenario 5: World Selection
-- Have multiple worlds available
-- Select different worlds
-- Verify: Server restarts with selected world each time
-
-## Technical Details
-
-### Volume Access
-- Worlds are stored in the `main` volume, `world` subpath
-- Mounted at `/world` inside the container
-- Accessed via `sdk.volumes.main` in the SDK layer
-
-### Thread Safety
-- Discovery is async and doesn't lock files
-- File listing is read-only operation
-- Safe to run during Configure action
-
-### Performance
-- Directory listing is fast even with many worlds
-- ~10-20ms typical for directories with <100 worlds
-- No blocking operations involved
+- `Configure` with the uploaded world's exact base name → server boots it.
+- `Configure` with a blank world name → rejected, config unchanged.
 
 ## Troubleshooting
 
-### Worlds not showing up
-1. Check console logs for discovery errors
-2. Verify world files exist in `/world` directory
-3. Ensure files have `.db` or `.fwl` extensions
-4. Check file permissions (should be readable)
+### Server boots a fresh world instead of the upload
 
-### Wrong world selected
-1. Verify the world name matches the file names exactly (minus extension)
-2. Case sensitivity: names are case-insensitive internally but preserved as entered
-3. Check server logs to see which world was actually loaded
+The world name must match the uploaded files' base name exactly. Check the
+file names in `main/world` and re-run `Configure`.
 
-### Discovery errors
-1. If "World volume not available": Volume not mounted yet (expected on first run)
-2. If directory errors: Check Docker volume permissions
-3. If file errors: Check individual world file permissions
+### Upload rejected
+
+Read the action result: unsafe paths and incomplete archives (missing any of
+`.db2`/`.fwl2`/`.chunk`) are refused before anything is written.

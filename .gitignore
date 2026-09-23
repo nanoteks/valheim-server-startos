@@ -6,4 +6,4 @@ node_modules/
 .vs/
 docker-images
 javascript
-ncc-cachencc-cache
+ncc-cache

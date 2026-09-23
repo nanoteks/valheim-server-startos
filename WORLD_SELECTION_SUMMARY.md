@@ -1,151 +1,76 @@
 # World Selection Feature - Implementation Summary
 
-## ✅ Feature Complete
+The `Configure` action now invites reusing an existing world name, and a new
+`Upload World` action imports a current-format world ZIP into `main/world`.
+There is no automatic discovery: no module lists `/world`, and no world list
+is logged. The user types the world name in `Configure`.
 
-The world selection feature has been successfully implemented, allowing users to select from existing world files when configuring their Valheim server on StartOS.
+## What was built
 
-## What Was Built
+### 1. Upload World action (`startos/actions/uploadWorld.ts`) — NEW
 
-### 1. World Discovery Module (`startos/actions/worldDiscovery.ts`) - NEW
-A complete world discovery system that:
-- Discovers Valheim world files in the `/world` volume
-- Handles `.db`, `.fwl`, and backup file extensions
-- Deduplicates world names automatically
-- Returns sorted, user-friendly world lists
-- Gracefully handles missing volumes, directories, and errors
-- No exceptions thrown - all errors handled with fallbacks
+- Accepts one `.zip` via `Value.file`.
+- Rejects empty/unreadable archives and unsafe entry paths (absolute, `..`,
+  drive prefixes).
+- Accepts a current-format world folder (`.db2` + `.fwl2` + `.chunk`/`.chunks`
+  sharing one top-level folder) and/or a legacy `.db` + `.fwl` pair with
+  matching names (the server converts legacy worlds on load).
+- Rejects flat current-format files and unmatched legacy halves with
+  specific errors.
+- Extracts into `sdk.volumes.main.subpath('world/worlds_local')` — the
+  directory the server reads (`-savedir /world`) — then deletes the temp
+  upload.
+- Warns to stop the server before replacing the active world's files.
 
-**Key Functions:**
-- `discoverWorlds()` - Main discovery function
-- `extractWorldName()` - Parses world file names
-- `deduplicateWorldNames()` - Creates unique sorted list
+### 2. Enhanced Configure action (`startos/actions/configure.ts`) — MODIFIED
 
-### 2. Enhanced Configure Action (`startos/actions/configure.ts`) - MODIFIED
-Integration of world discovery into the configuration flow:
-- Import and call `discoverWorlds()` during form load
-- Display available worlds in console logs
-- Updated description to guide users about world selection
-- Enhanced world name validation and logging
-- Seamless fallback mechanism if discovery fails
+- `worldName` description points at reusing an existing world.
+- Prefill falls back to file-model defaults if the store read fails.
+- Handler trims `worldName`, rejects empty input, logs the saved world,
+  and rethrows merge failures after logging.
 
-**Changes:**
-- Added world discovery call in `getRenderInfo` callback
-- Logs available worlds for visibility
-- Validates world name input (non-empty, trimmed)
-- Improved confirmation logging with selected world name
+## User experience
 
-## User Experience
+1. Actions → `Upload World` → submit the world ZIP.
+2. Actions → `Configure` → set World Name to the uploaded world's base name.
+3. Server restarts into that world.
 
-### Workflow
-1. User opens "Configure" action in StartOS
-2. System discovers existing worlds from the volume
-3. Available worlds are logged to the console
-4. User can:
-   - Type a new world name to create a new world
-   - Use an existing world name from their backups
-5. Configuration is saved and server restarts with selected world
-
-### Example Console Output
-```
-Available worlds: Old_Kingdom, Starting_Village, Adventure_Map
-Successfully updated server configuration with world: Adventure_Map
-```
-
-## How It Works
-
-### Discovery Process
-- Reads the main volume's `world` subdirectory
-- Filters files by Valheim world extensions (`.db`, `.fwl`, etc)
-- Extracts base names (e.g., `MyWorld.db` → `MyWorld`)
-- Removes duplicates (since worlds have multiple file types)
-- Returns sorted alphabetical list
-- All errors logged but don't prevent server startup
-
-### Error Resilience
-- **No worlds exist yet**: Returns empty list, uses default world name
-- **Volume not mounted**: Returns empty list gracefully
-- **Directory doesn't exist**: Returns empty list (expected on first run)
-- **Read errors**: Logged and handled, defaults still applied
-- **Select fails**: Logs error and rethrows (prevents bad configs)
-
-## Code Quality
-
-### Error Handling (from previous task)
-- All file I/O operations wrapped in try-catch
-- Centralized `logError()` function for consistent logging
-- Context captured in all error logs
-- Graceful fallbacks where appropriate
-- Re-throws for critical operations
-
-### Testing Ready
-Code is ready for testing with:
-1. Fresh installations (no worlds)
-2. Restored backups (multiple worlds)
-3. Manual world file uploads
-4. New world creation
-5. World selection and switching
-
-## Files Modified/Created
+## Files modified/created
 
 ```
 startos/
 ├── actions/
-│   ├── configure.ts (MODIFIED - world discovery integration)
-│   └── worldDiscovery.ts (NEW - world discovery module)
+│   ├── configure.ts (MODIFIED - hint text, validation, error handling)
+│   ├── index.ts (MODIFIED - registers uploadWorld)
+│   └── uploadWorld.ts (NEW - ZIP import action)
 ├── errorHandler.ts (EXISTING - used for error logging)
 ```
 
 Documentation:
+
 ```
-WORLD_SELECTION_FEATURE.md (NEW - comprehensive feature docs)
+WORLD_SELECTION_FEATURE.md (REWRITTEN - matches merged code)
+README.md (documents Upload World)
+instructions.md (documents Upload World)
 ```
 
-## Integration Points
+## Verification checklist
 
-The feature integrates seamlessly with existing systems:
-- ✅ Error handling infrastructure from previous implementation
-- ✅ Configuration action framework
-- ✅ World persistence (no new storage needed)
-- ✅ Server restart on config change (already handled by SDK)
-- ✅ Backup/restore (worlds automatically included)
+- `tsc --noEmit` clean (new i18n keys registered with translations).
+- `s9pk pack` clean for both arches.
+- `uploadWorld` validation + extraction exercised locally against real ZIPs
+  (15 cases: current folder, legacy pair, mixed, unsafe, incomplete, flat,
+  empty, junk) — all pass.
+- Still to verify on a StartOS box: upload through the real action UI,
+  server boot into uploaded current-format and converted legacy worlds,
+  backup/restore round-trip.
 
-## Next Steps for Users
+## Related documentation
 
-### To Use This Feature
-1. Install the updated package
-2. Run "Configure" action
-3. Check console logs for available worlds
-4. Select or type the world name you want
-5. Server will start with that world
-
-### To Test
-See WORLD_SELECTION_FEATURE.md for detailed test scenarios
-
-## Future Enhancement Opportunities
-
-- **UI Improvements**: Implement dropdown select UI (if SDK supports)
-- **World Metadata**: Display world info (creation date, size)
-- **World Validation**: Verify world files before offering
-- **Better Sorting**: Sort by last modified instead of alphabetically
-- **Auto-Remember**: Remember last selected world
-
-## Verification Checklist
-
-- ✅ World discovery module created with full error handling
-- ✅ Configure action integrated with world discovery
-- ✅ World name validation implemented
-- ✅ Console logging for discoverability
-- ✅ Graceful error handling throughout
-- ✅ Backward compatible (works with no worlds)
-- ✅ Documentation provided
-- ✅ Code follows existing style and patterns
-
-## Related Documentation
-
-- `WORLD_SELECTION_FEATURE.md` - Detailed feature documentation
-- `ERROR_HANDLING_IMPLEMENTATION.md` - Error handling details
-- `README.md` - Overall package documentation
+- `WORLD_SELECTION_FEATURE.md` — detailed feature documentation
+- `ERROR_HANDLING_IMPLEMENTATION.md` — error handling details
+- `README.md` — overall package documentation
 
 ---
 
-**Status**: Ready for deployment and testing on StartOS
+**Status**: Implemented, typechecks, packs. Box verification pending.
